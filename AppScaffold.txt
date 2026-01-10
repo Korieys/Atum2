@@ -1,0 +1,911 @@
+import React, { useState } from 'react';
+import { 
+  Layout, 
+  PenTool, 
+  GitCommit, 
+  Share2, 
+  Activity, 
+  Users, 
+  Zap, 
+  Calendar, 
+  MessageSquare, 
+  CheckCircle,
+  ChevronRight,
+  Github,
+  Twitter,
+  Linkedin,
+  Youtube,
+  Menu,
+  X,
+  Plus,
+  ArrowRight,
+  Filter,
+  Search,
+  Clock,
+  MoreHorizontal,
+  ThumbsUp,
+  BarChart2,
+  Image as ImageIcon,
+  Code,
+  Terminal,
+  Cpu,
+  Radio,
+  Layers,
+  Lightbulb,
+  Tag
+} from 'lucide-react';
+
+// --- Theme Constants ---
+// Monochromatic Dark Green + High Contrast Lime + Warm Orange Accent
+const COLORS = {
+  background: '#050805',       // Deepest forest black
+  surface: '#0f140f',          // Dark organic card background
+  surfaceHighlight: '#1a211a', // Lighter hover state
+  border: '#2a332a',           // Subtle borders
+  primary: '#d2ff28',          // Bright Lime (Brand Identity)
+  primaryDim: 'rgba(210, 255, 40, 0.1)', // Low opacity lime
+  accent: '#ff6b2b',           // Persimmon Orange (Status/Alerts)
+  textMain: '#eff2ef',         // Off-white for readability
+  textMuted: '#8b948b',        // Sage grey for secondary text
+};
+
+// --- Mock Data ---
+const RECENT_ACTIVITY = [
+  { id: 1, type: 'commit', source: 'GitHub', title: 'feat: integrated stripe payments', time: '10m ago', icon: <GitCommit size={14} />, details: '7 files changed' },
+  { id: 2, type: 'task', source: 'Linear', title: 'Fix overflow on mobile nav', time: '45m ago', icon: <CheckCircle size={14} />, details: 'Ticket #429' },
+  { id: 3, type: 'note', source: 'Atum', title: 'Struggling with database schema...', time: '2h ago', icon: <PenTool size={14} />, details: 'View note' },
+  { id: 4, type: 'milestone', source: 'System', title: 'Reached 100 active users!', time: '5h ago', icon: <Zap size={14} />, details: 'Milestone unlocked' },
+];
+
+const GENERATED_DRAFTS = [
+  { id: 1, type: 'Twitter Thread', title: 'Why I rewrote my auth stack (again)', status: 'Ready', platform: 'twitter' },
+  { id: 2, type: 'LinkedIn Post', title: 'The journey to $1k MRR', status: 'Draft', platform: 'linkedin' },
+  { id: 3, type: 'YouTube Short', title: 'Coding timelapse: Dark mode', status: 'Scripted', platform: 'youtube' },
+];
+
+const COMMUNITY_UPDATES = [
+  { id: 1, user: 'Sarah dev', action: 'forked your roadmap', time: '1h ago' },
+  { id: 2, user: 'AlexCode', action: 'commented on your changelog', time: '3h ago' },
+];
+
+const TRACKER_ITEMS = [
+  { id: 1, date: 'Today', items: [
+    { type: 'commit', title: 'refactor: simplify user context', desc: 'Removed redundancy in auth provider', time: '2:30 PM', source: 'GitHub' },
+    { type: 'note', title: 'Breakthrough: Cache Invalidation', desc: 'Finally realized why the user profile wasn\'t updating. It was the service worker.', time: '1:15 PM', source: 'Manual' },
+    { type: 'task', title: 'Design System Audit', desc: 'Completed review of button variants', time: '11:00 AM', source: 'Linear' }
+  ]},
+  { id: 2, date: 'Yesterday', items: [
+    { type: 'milestone', title: 'Deployed v1.2.0', desc: 'Major release including dark mode.', time: '4:00 PM', source: 'System' },
+    { type: 'commit', title: 'fix: z-index on modal', desc: 'Modal was appearing behind navbar', time: '10:30 AM', source: 'GitHub' }
+  ]}
+];
+
+const PARKING_LOT_ITEMS = [
+  { id: 1, title: 'AI-powered recipe generator', desc: 'Scrape fridge contents and suggest recipes.', tags: ['App', 'AI'], date: '2d ago' },
+  { id: 2, title: 'Devlog: Migrating to Next.js', desc: 'Focus on the pain points of hydration errors.', tags: ['Video', 'Content'], date: '5d ago' },
+  { id: 3, title: 'Veggie Invaders', desc: 'Space Invaders clone but with healthy food.', tags: ['Game'], date: '1w ago' },
+  { id: 4, title: 'Dark Mode Toggle Animation', desc: 'Smooth transition with svg masking.', tags: ['UI/UX', 'Post'], date: '1d ago' },
+  { id: 5, title: 'Supabase vs Firebase comparison', desc: 'In-depth analysis for the blog.', tags: ['Article'], date: '3d ago' },
+];
+
+const IDEA_TAGS = ['App', 'Game', 'Video', 'Post', 'Feature', 'Article'];
+
+// --- Shared Components ---
+
+const SidebarItem = ({ icon, label, active, onClick, collapsed }) => (
+  <button 
+    onClick={onClick}
+    className={`w-full flex items-center gap-3 px-4 py-3 transition-all duration-200 group relative
+      ${active 
+        ? `bg-white/10` 
+        : `hover:bg-white/5`
+      }
+    `}
+  >
+    {active && <div className="absolute left-0 top-0 bottom-0 w-1" style={{ backgroundColor: COLORS.primary }} />}
+    <div 
+      className="transition-colors duration-200"
+      style={{ color: active ? COLORS.primary : COLORS.textMuted }}
+    >
+      {icon}
+    </div>
+    {!collapsed && (
+      <span 
+        className="font-medium transition-colors duration-200"
+        style={{ color: active ? COLORS.textMain : COLORS.textMuted }}
+      >
+        {label}
+      </span>
+    )}
+  </button>
+);
+
+const ActionButton = ({ children, primary = false, onClick, className = '' }) => (
+  <button
+    onClick={onClick}
+    className={`px-4 py-2 rounded-lg font-bold transition-all flex items-center gap-2 text-sm justify-center ${className}
+      ${primary 
+        ? `hover:brightness-110 hover:scale-105 text-black` 
+        : `bg-transparent hover:bg-white/5 border`
+      }
+    `}
+    style={{ 
+      backgroundColor: primary ? COLORS.primary : undefined,
+      color: primary ? '#000000' : COLORS.textMain,
+      borderColor: primary ? 'transparent' : COLORS.border,
+      boxShadow: primary ? `0 0 15px -3px ${COLORS.primary}` : 'none'
+    }}
+  >
+    {children}
+  </button>
+);
+
+const Badge = ({ children, color = COLORS.primary }) => (
+  <span 
+    className="text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded" 
+    style={{ backgroundColor: `${color}20`, color: color }}
+  >
+    {children}
+  </span>
+);
+
+// --- New Complex Components for Dashboard ---
+
+const TechCard = ({ title, value, subtext, trend, graphType = 'line' }) => (
+  <div className="relative group overflow-hidden rounded-xl border p-5 transition-all"
+       style={{ 
+         borderColor: COLORS.border, 
+         backgroundColor: COLORS.surface,
+         background: `linear-gradient(135deg, ${COLORS.surface}, ${COLORS.surfaceHighlight})`
+       }}>
+    {/* Tech Background Pattern */}
+    <div className="absolute inset-0 opacity-[0.03]" 
+         style={{ backgroundImage: `linear-gradient(0deg, transparent 24%, ${COLORS.primary} 25%, ${COLORS.primary} 26%, transparent 27%, transparent 74%, ${COLORS.primary} 75%, ${COLORS.primary} 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, ${COLORS.primary} 25%, ${COLORS.primary} 26%, transparent 27%, transparent 74%, ${COLORS.primary} 75%, ${COLORS.primary} 76%, transparent 77%, transparent)`, backgroundSize: '30px 30px' }} />
+    
+    <div className="relative z-10 flex justify-between items-start mb-4">
+      <h3 className="text-xs font-mono uppercase tracking-widest" style={{ color: COLORS.textMuted }}>{title}</h3>
+      <div className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ backgroundColor: `${COLORS.primary}1A`, color: COLORS.primary }}>
+        {trend}
+      </div>
+    </div>
+    
+    <div className="relative z-10 flex items-end gap-3">
+      <span className="text-3xl font-bold" style={{ color: COLORS.textMain }}>{value}</span>
+      <span className="text-xs mb-1.5" style={{ color: COLORS.textMuted }}>{subtext}</span>
+    </div>
+
+    {/* Mock Sparkline */}
+    <div className="mt-4 h-8 flex items-end gap-1 opacity-50">
+      {Array.from({ length: 12 }).map((_, i) => (
+        <div key={i} 
+             className="w-full rounded-t-sm transition-all"
+             style={{ 
+               height: `${30 + Math.random() * 70}%`, 
+               backgroundColor: i > 8 ? COLORS.primary : COLORS.border 
+             }} 
+        />
+      ))}
+    </div>
+  </div>
+);
+
+const TerminalFeedItem = ({ item, index }) => (
+  <div className="flex gap-4 group">
+    {/* Line & Dot */}
+    <div className="flex flex-col items-center">
+      <div className="w-px h-full bg-white/10 group-last:bg-transparent relative">
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full border border-black"
+             style={{ backgroundColor: index === 0 ? COLORS.primary : COLORS.textMuted }} />
+      </div>
+    </div>
+    
+    {/* Content */}
+    <div className="pb-8 flex-1">
+      <div className="p-4 rounded-lg border transition-all hover:translate-x-1"
+           style={{ 
+             borderColor: COLORS.border, 
+             backgroundColor: `${COLORS.surfaceHighlight}4D`, // 30% opacity
+           }}>
+        <div className="flex justify-between items-start mb-2">
+          <div className="flex items-center gap-2">
+             <span className="font-mono text-[10px] opacity-70" style={{ color: COLORS.primary }}>
+               {index === 0 ? 'LIVE' : item.time}
+             </span>
+             <span className="h-3 w-px" style={{ backgroundColor: COLORS.border }} />
+             <span className="text-xs font-bold uppercase tracking-wider" style={{ color: COLORS.textMain }}>{item.source}</span>
+          </div>
+          <div className="p-1 rounded-md border" style={{ backgroundColor: COLORS.background, borderColor: COLORS.border, color: COLORS.textMuted }}>
+            {item.icon}
+          </div>
+        </div>
+        
+        <h4 className="font-mono text-sm mb-1 truncate" style={{ color: COLORS.textMain }}>{item.title}</h4>
+        <div className="flex items-center gap-2 text-xs" style={{ color: COLORS.textMuted }}>
+          <span>{item.type}</span>
+          <span>•</span>
+          <span className="font-mono opacity-50">{item.details}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+// --- Sub-Views ---
+
+const DashboardView = () => (
+  <div className="space-y-6 animate-in fade-in duration-500">
+    
+    {/* Section: Mission Control Header */}
+    <div className="relative p-6 rounded-2xl border overflow-hidden" 
+         style={{ 
+           borderColor: COLORS.border,
+           background: `linear-gradient(to right, ${COLORS.surface}, ${COLORS.surfaceHighlight})`
+         }}>
+       <div className="absolute right-0 top-0 bottom-0 w-64 pointer-events-none" 
+            style={{ background: `linear-gradient(to left, ${COLORS.primary}0D, transparent)` }} />
+       
+       <div className="relative z-10 flex flex-col md:flex-row justify-between md:items-end gap-6">
+         <div>
+           <div className="flex items-center gap-2 mb-2" style={{ color: COLORS.primary }}>
+             <Radio size={16} className="animate-pulse" />
+             <span className="text-xs font-mono font-bold tracking-widest uppercase">System Online</span>
+           </div>
+           <h1 className="text-3xl font-bold" style={{ color: COLORS.textMain }}>Mission Control</h1>
+           <p style={{ color: COLORS.textMuted }}>Build Cycle #429 • <span style={{ color: COLORS.textMain }}>Phase 3: Scaling</span></p>
+         </div>
+
+         <div className="flex gap-4">
+            <div className="text-right hidden md:block">
+               <div className="text-xs font-mono uppercase" style={{ color: COLORS.textMuted }}>Uptime</div>
+               <div className="text-xl font-mono font-bold" style={{ color: COLORS.textMain }}>14d 03h 12m</div>
+            </div>
+            <div className="h-10 w-px hidden md:block" style={{ backgroundColor: COLORS.border }} />
+            <div className="flex gap-2">
+              <ActionButton className="h-10 px-4"><PenTool size={16} /></ActionButton>
+              <ActionButton primary className="h-10 px-6 font-mono tracking-wide"><Zap size={16} /> GENERATE_LOG</ActionButton>
+            </div>
+         </div>
+       </div>
+    </div>
+
+    {/* Section: Data Banks (Stats) */}
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <TechCard title="Velocity" value="42" subtext="commits/wk" trend="+12%" />
+      <TechCard title="Reach" value="12.5k" subtext="impressions" trend="+8%" />
+      <TechCard title="Colony" value="340" subtext="members" trend="+3" />
+      <TechCard title="Streak" value="14" subtext="days active" trend="HOT" />
+    </div>
+
+    {/* Section: Main Content Grid */}
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      
+      {/* Col: Live Terminal (Activity) */}
+      <div className="lg:col-span-8 space-y-6">
+        <div className="p-1 rounded-xl border" style={{ backgroundColor: COLORS.surface, borderColor: COLORS.border }}>
+           <div className="px-4 py-3 border-b flex justify-between items-center rounded-t-lg" 
+                style={{ borderColor: COLORS.border, backgroundColor: `${COLORS.surfaceHighlight}33` }}>
+             <h3 className="font-mono text-sm font-bold flex items-center gap-2" style={{ color: COLORS.textMain }}>
+               <Terminal size={14} style={{ color: COLORS.primary }} />
+               LIVE_ACTIVITY_LOG
+             </h3>
+             <div className="flex gap-1">
+               <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: COLORS.accent }} />
+               <span className="text-[10px] font-mono uppercase" style={{ color: COLORS.textMuted }}>Syncing</span>
+             </div>
+           </div>
+           <div className="p-6">
+             {RECENT_ACTIVITY.map((item, idx) => (
+               <TerminalFeedItem key={item.id} item={item} index={idx} />
+             ))}
+             <button className="w-full py-2 mt-[-10px] text-xs font-mono border border-dashed rounded transition-colors hover:bg-white/5"
+                     style={{ color: COLORS.primary, borderColor: COLORS.border }}>
+               LOAD_MORE_LOGS()
+             </button>
+           </div>
+        </div>
+      </div>
+
+      {/* Col: Side Modules */}
+      <div className="lg:col-span-4 space-y-6">
+        
+        {/* Module: Content Fabricator */}
+        <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: COLORS.surface, borderColor: COLORS.border }}>
+          <div className="p-4 border-b flex justify-between items-center" style={{ borderColor: COLORS.border }}>
+            <h3 className="font-mono text-sm font-bold flex items-center gap-2" style={{ color: COLORS.textMain }}>
+              <Cpu size={14} style={{ color: COLORS.primary }} />
+              FABRICATOR
+            </h3>
+            <span className="text-[10px] font-mono" style={{ color: COLORS.textMuted }}>Q: 3</span>
+          </div>
+          
+          <div className="p-2 space-y-1" style={{ backgroundColor: `${COLORS.surfaceHighlight}1A` }}>
+            {GENERATED_DRAFTS.map((draft, i) => (
+               <div key={draft.id} className="p-3 rounded border border-transparent hover:bg-white/5 group cursor-pointer transition-all">
+                  <div className="flex justify-between items-start mb-1">
+                    <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: COLORS.accent }}>{draft.platform}</span>
+                    {i === 0 && <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: COLORS.primary }} />}
+                  </div>
+                  <h4 className="text-xs font-medium leading-snug mb-2 transition-colors" style={{ color: COLORS.textMain }}>{draft.title}</h4>
+                  <div className="w-full h-1 rounded-full overflow-hidden" style={{ backgroundColor: COLORS.border }}>
+                    <div className="h-full" style={{ backgroundColor: COLORS.primary, width: draft.status === 'Ready' ? '100%' : '60%' }} />
+                  </div>
+               </div>
+            ))}
+          </div>
+          <div className="p-3 border-t" style={{ borderColor: COLORS.border }}>
+             <button className="w-full py-2 text-black text-xs font-bold font-mono uppercase rounded flex items-center justify-center gap-2 hover:brightness-110 transition-all"
+                     style={{ backgroundColor: COLORS.primary }}>
+               <Zap size={14} /> Initialize New Draft
+             </button>
+          </div>
+        </div>
+
+        {/* Module: Signal Radar */}
+        <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: COLORS.surface, borderColor: COLORS.border }}>
+          <div className="p-4 border-b flex justify-between items-center" style={{ borderColor: COLORS.border }}>
+             <h3 className="font-mono text-sm font-bold flex items-center gap-2" style={{ color: COLORS.textMain }}>
+               <Radio size={14} style={{ color: COLORS.primary }} />
+               INCOMING_SIGNALS
+             </h3>
+          </div>
+          <div className="p-4 space-y-4">
+             {COMMUNITY_UPDATES.map(update => (
+               <div key={update.id} className="flex gap-3 items-center">
+                 <div className="w-8 h-8 rounded border flex items-center justify-center text-xs font-bold"
+                      style={{ backgroundColor: COLORS.surfaceHighlight, borderColor: COLORS.border, color: COLORS.primary }}>
+                   {update.user.charAt(0)}
+                 </div>
+                 <div className="flex-1 min-w-0">
+                   <p className="text-xs truncate" style={{ color: COLORS.textMain }}>
+                     <span className="font-bold">{update.user}</span> {update.action}
+                   </p>
+                   <span className="text-[10px] font-mono" style={{ color: COLORS.textMuted }}>{update.time}</span>
+                 </div>
+               </div>
+             ))}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+);
+
+const TrackerView = () => (
+  <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="flex justify-between items-center mb-8">
+      <div>
+        <h2 className="text-2xl font-bold mb-1" style={{ color: COLORS.textMain }}>Smart Progress Tracker</h2>
+        <p style={{ color: COLORS.textMuted }}>Your automated project diary.</p>
+      </div>
+      <div className="flex gap-2">
+        <ActionButton><Filter size={16}/> Filter</ActionButton>
+        <ActionButton primary><Plus size={16}/> Manual Entry</ActionButton>
+      </div>
+    </div>
+
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="lg:col-span-2 space-y-8">
+        {TRACKER_ITEMS.map((group) => (
+          <div key={group.id}>
+            <div className="flex items-center gap-4 mb-4">
+              <span className="font-bold text-lg" style={{ color: COLORS.textMain }}>{group.date}</span>
+              <div className="h-px flex-1" style={{ backgroundColor: COLORS.border }}></div>
+            </div>
+            <div className="space-y-4 relative pl-4 border-l-2" style={{ borderColor: COLORS.surfaceHighlight }}>
+              {group.items.map((item, idx) => (
+                <div key={idx} className="relative group">
+                  {/* Timeline Dot */}
+                  <div 
+                    className="absolute -left-[21px] top-1.5 w-3 h-3 rounded-full border-2 transition-colors"
+                    style={{ 
+                      backgroundColor: COLORS.background, 
+                      borderColor: item.type === 'milestone' ? COLORS.accent : COLORS.primary 
+                    }} 
+                  />
+                  
+                  <div className="p-4 rounded-xl border transition-all hover:translate-x-1" 
+                    style={{ backgroundColor: COLORS.surface, borderColor: COLORS.border }}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex items-center gap-2">
+                         <Badge color={item.type === 'milestone' ? COLORS.accent : COLORS.primary}>{item.type}</Badge>
+                         <span className="text-xs" style={{ color: COLORS.textMuted }}>{item.source}</span>
+                      </div>
+                      <span className="text-xs" style={{ color: COLORS.textMuted }}>{item.time}</span>
+                    </div>
+                    <h3 className="font-bold text-lg mb-1" style={{ color: COLORS.textMain }}>{item.title}</h3>
+                    <p className="text-sm opacity-80" style={{ color: COLORS.textMuted }}>{item.desc}</p>
+                    
+                    {item.type === 'commit' && (
+                      <div className="mt-3 p-2 rounded font-mono text-xs flex items-center gap-2" style={{ backgroundColor: 'rgba(0,0,0,0.3)', color: COLORS.textMuted }}>
+                         <GitCommit size={12} /> 7 files changed, +124 -32 lines
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="space-y-6">
+        <div className="p-5 rounded-xl border" style={{ backgroundColor: COLORS.surface, borderColor: COLORS.border }}>
+          <h3 className="font-bold mb-4 flex items-center gap-2" style={{ color: COLORS.textMain }}>
+            <Zap size={18} style={{ color: COLORS.primary }}/> Daily Insight
+          </h3>
+          <p className="text-sm mb-4 leading-relaxed" style={{ color: COLORS.textMuted }}>
+            You're spending 40% of your time on infrastructure this week. Consider pivoting to feature work to maintain shipping momentum.
+          </p>
+          <div className="h-2 w-full rounded-full overflow-hidden flex" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}>
+            <div className="h-full w-[40%]" style={{ backgroundColor: COLORS.accent }}></div>
+            <div className="h-full w-[60%]" style={{ backgroundColor: COLORS.primary }}></div>
+          </div>
+          <div className="flex justify-between mt-2 text-xs" style={{ color: COLORS.textMuted }}>
+             <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS.accent }}/> Infra</span>
+             <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS.primary }}/> Features</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+const NarrativeView = () => (
+  <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 h-full flex flex-col">
+    <div className="flex justify-between items-center mb-6">
+       <h2 className="text-2xl font-bold" style={{ color: COLORS.textMain }}>Narrative Engine</h2>
+       <ActionButton primary><Zap size={16}/> Auto-Generate</ActionButton>
+    </div>
+
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
+      {/* Configuration Panel */}
+      <div className="lg:col-span-4 space-y-6">
+        <div className="p-5 rounded-xl border" style={{ backgroundColor: COLORS.surface, borderColor: COLORS.border }}>
+          <label className="text-xs font-bold uppercase tracking-wider mb-3 block" style={{ color: COLORS.textMuted }}>Source Material</label>
+          <div className="space-y-2 mb-6">
+            <div className="flex items-center gap-3 p-2 rounded border cursor-pointer" style={{ borderColor: `${COLORS.primary}4D`, backgroundColor: `${COLORS.primary}0D` }}>
+              <CheckCircle size={16} style={{ color: COLORS.primary }} />
+              <div className="text-sm" style={{ color: COLORS.textMain }}>Last 24h Activity</div>
+            </div>
+            <div className="flex items-center gap-3 p-2 rounded border border-transparent hover:bg-white/5 cursor-pointer">
+               <div className="w-4 h-4 rounded-full border" style={{ borderColor: COLORS.textMuted }} />
+               <div className="text-sm" style={{ color: COLORS.textMuted }}>Specific Milestone</div>
+            </div>
+          </div>
+
+          <label className="text-xs font-bold uppercase tracking-wider mb-3 block" style={{ color: COLORS.textMuted }}>Vibe Check</label>
+          <div className="grid grid-cols-2 gap-2 mb-6">
+             {['Professional', 'Hype', 'Vulnerable', 'Technical'].map(tone => (
+               <button key={tone} className="p-2 text-xs border rounded hover:border-opacity-100 transition-colors" 
+                       style={{ borderColor: COLORS.border, color: COLORS.textMuted, ':hover': { borderColor: COLORS.primary } }}>
+                 {tone}
+               </button>
+             ))}
+          </div>
+
+          <label className="text-xs font-bold uppercase tracking-wider mb-3 block" style={{ color: COLORS.textMuted }}>Format</label>
+          <div className="space-y-2">
+            <div className="flex justify-between items-center p-2 rounded hover:bg-white/5 cursor-pointer">
+               <span className="text-sm" style={{ color: COLORS.textMain }}>Twitter Thread</span>
+               <Twitter size={14} style={{ color: COLORS.textMuted }}/>
+            </div>
+            <div className="flex justify-between items-center p-2 rounded hover:bg-white/5 cursor-pointer">
+               <span className="text-sm" style={{ color: COLORS.textMain }}>LinkedIn Article</span>
+               <Linkedin size={14} style={{ color: COLORS.textMuted }}/>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Editor/Preview Panel */}
+      <div className="lg:col-span-8 flex flex-col gap-6">
+        <div className="flex-1 p-6 rounded-xl border relative" style={{ backgroundColor: COLORS.surface, borderColor: COLORS.border }}>
+           <div className="absolute top-4 right-4 flex gap-2">
+              <button className="p-2 rounded hover:bg-white/5" style={{ color: COLORS.textMuted }}><ImageIcon size={18}/></button>
+              <button className="p-2 rounded hover:bg-white/5" style={{ color: COLORS.textMuted }}><Code size={18}/></button>
+           </div>
+           
+           <div className="prose prose-invert max-w-none">
+             <h3 className="text-xl font-bold mb-4" style={{ color: COLORS.textMain }}>Why I rewrote my auth stack (again)</h3>
+             <p className="text-sm leading-7 mb-4" style={{ color: COLORS.textMuted }}>
+               It started with a simple bug report. "I can't log in on mobile." 
+               Three days later, I was deep in the OAuth documentation, questioning every life choice that led me here.
+               <br/><br/>
+               But here is the thing: building auth is deceptively hard. It's not just checking a password. It's session management, token rotation, social providers, and doing it all securely.
+               <br/><br/>
+               Today, I finally shipped the new system. It's faster, safer, and—most importantly—it actually works on mobile.
+             </p>
+             <div className="p-4 rounded-lg border font-mono text-xs" style={{ backgroundColor: 'rgba(0,0,0,0.3)', borderColor: 'rgba(255,255,255,0.05)', color: COLORS.primary }}>
+                {'>'} git commit -m "feat: complete auth overhaul"
+             </div>
+           </div>
+        </div>
+        
+        <div className="flex justify-end gap-3">
+           <ActionButton>Save Draft</ActionButton>
+           <ActionButton primary>Schedule Post</ActionButton>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+const ParkingLotView = () => (
+  <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="flex justify-between items-center mb-8">
+      <div>
+        <h2 className="text-2xl font-bold mb-1" style={{ color: COLORS.textMain }}>Idea Parking Lot</h2>
+        <p style={{ color: COLORS.textMuted }}>Capture, tag, and incubate your future projects.</p>
+      </div>
+      <div className="flex gap-2">
+         <div className="hidden md:flex items-center gap-2 mr-4">
+            <span className="text-xs font-bold uppercase" style={{ color: COLORS.textMuted }}>Filter:</span>
+            {['All', 'App', 'Content'].map(f => (
+                <button key={f} className="px-2 py-1 rounded text-xs hover:bg-white/10" style={{ color: COLORS.textMain }}>{f}</button>
+            ))}
+         </div>
+         <ActionButton primary><Plus size={16}/> New Idea</ActionButton>
+      </div>
+    </div>
+
+    {/* Quick Input Area */}
+    <div className="p-6 mb-8 rounded-xl border flex gap-4 items-start" style={{ backgroundColor: COLORS.surface, borderColor: COLORS.border }}>
+        <div className="p-3 rounded-lg" style={{ backgroundColor: `${COLORS.primary}1A`, color: COLORS.primary }}>
+            <Lightbulb size={24} />
+        </div>
+        <div className="flex-1">
+            <input 
+                type="text" 
+                placeholder="What are you thinking about?" 
+                className="w-full bg-transparent text-lg font-medium focus:outline-none mb-2 placeholder:opacity-30"
+                style={{ color: COLORS.textMain }}
+            />
+            <div className="flex gap-2 items-center">
+                 <Tag size={14} style={{ color: COLORS.textMuted }} />
+                 {IDEA_TAGS.slice(0, 4).map(tag => (
+                     <button key={tag} className="text-xs px-2 py-1 rounded border border-transparent hover:border-white/20 hover:bg-white/5 transition-colors" style={{ color: COLORS.textMuted }}>
+                        {tag}
+                     </button>
+                 ))}
+            </div>
+        </div>
+        <button className="px-4 py-2 rounded font-bold text-sm transition-colors hover:bg-white/10" style={{ color: COLORS.primary }}>
+            Save
+        </button>
+    </div>
+
+    {/* Masonry Grid of Ideas */}
+    <div className="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6">
+        {PARKING_LOT_ITEMS.map(item => (
+            <div key={item.id} className="break-inside-avoid p-5 rounded-xl border group hover:border-white/20 transition-all cursor-pointer relative overflow-hidden" 
+                 style={{ backgroundColor: COLORS.surface, borderColor: COLORS.border }}>
+                
+                {/* Hover Glow Effect */}
+                <div className="absolute inset-0 bg-gradient-to-br from-transparent to-white/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+
+                <div className="flex justify-between items-start mb-3">
+                    <div className="flex gap-1 flex-wrap">
+                        {item.tags.map(tag => (
+                            <Badge key={tag} color={tag === 'App' || tag === 'Game' ? COLORS.primary : COLORS.accent}>{tag}</Badge>
+                        ))}
+                    </div>
+                    <button className="opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: COLORS.textMuted }}>
+                        <MoreHorizontal size={16} />
+                    </button>
+                </div>
+                
+                <h3 className="text-lg font-bold mb-2 leading-snug" style={{ color: COLORS.textMain }}>{item.title}</h3>
+                <p className="text-sm mb-4 leading-relaxed" style={{ color: COLORS.textMuted }}>{item.desc}</p>
+                
+                <div className="flex items-center gap-2 text-xs pt-4 border-t" style={{ borderColor: COLORS.border, color: COLORS.textMuted }}>
+                    <Clock size={12} />
+                    <span>{item.date}</span>
+                </div>
+            </div>
+        ))}
+        
+        {/* Add New Card Placeholder */}
+        <div className="break-inside-avoid p-5 rounded-xl border border-dashed flex flex-col items-center justify-center gap-2 h-48 cursor-pointer hover:bg-white/5 transition-colors"
+             style={{ borderColor: COLORS.border, color: COLORS.textMuted }}>
+             <Plus size={24} />
+             <span className="text-sm font-medium">Add another idea</span>
+        </div>
+    </div>
+  </div>
+);
+
+const PublisherView = () => (
+  <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="flex justify-between items-center mb-8">
+      <h2 className="text-2xl font-bold" style={{ color: COLORS.textMain }}>Content Calendar</h2>
+      <div className="flex gap-2">
+         <div className="flex items-center -space-x-2 mr-4">
+            <div className="w-8 h-8 rounded-full border-2 bg-blue-500 flex items-center justify-center" style={{ borderColor: COLORS.background }}><Twitter size={14} className="text-white"/></div>
+            <div className="w-8 h-8 rounded-full border-2 bg-blue-700 flex items-center justify-center" style={{ borderColor: COLORS.background }}><Linkedin size={14} className="text-white"/></div>
+            <div className="w-8 h-8 rounded-full border-2 bg-red-600 flex items-center justify-center" style={{ borderColor: COLORS.background }}><Youtube size={14} className="text-white"/></div>
+         </div>
+         <ActionButton primary><Plus size={16}/> New Post</ActionButton>
+      </div>
+    </div>
+
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      {/* Calendar Grid */}
+      <div className="lg:col-span-3">
+         <div className="grid grid-cols-7 gap-px border rounded-t-xl overflow-hidden mb-6" style={{ borderColor: COLORS.border, backgroundColor: COLORS.border }}>
+            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => (
+              <div key={d} className="p-3 text-center text-xs font-bold uppercase tracking-wider" style={{ backgroundColor: COLORS.surface, color: COLORS.textMuted }}>{d}</div>
+            ))}
+            {Array.from({ length: 35 }).map((_, i) => (
+              <div key={i} className="min-h-[100px] p-2 relative group transition-colors hover:bg-white/5" style={{ backgroundColor: COLORS.surface }}>
+                 <span className="text-xs opacity-30 absolute top-2 right-2" style={{ color: COLORS.textMain }}>{i + 1}</span>
+                 {i === 2 && (
+                    <div className="mt-4 p-2 rounded text-xs font-medium border-l-2 cursor-pointer hover:scale-105 transition-transform" 
+                      style={{ backgroundColor: `${COLORS.primary}10`, borderLeftColor: COLORS.primary, color: COLORS.textMain }}
+                    >
+                      <Twitter size={10} className="mb-1 opacity-70"/>
+                      Launch Day
+                    </div>
+                 )}
+                 {i === 4 && (
+                    <div className="mt-4 p-2 rounded text-xs font-medium border-l-2 cursor-pointer hover:scale-105 transition-transform" 
+                      style={{ backgroundColor: `${COLORS.accent}10`, borderLeftColor: COLORS.accent, color: COLORS.textMain }}
+                    >
+                      <Youtube size={10} className="mb-1 opacity-70"/>
+                      Demo
+                    </div>
+                 )}
+              </div>
+            ))}
+         </div>
+      </div>
+
+      {/* Sidebar Queue */}
+      <div className="space-y-6">
+         <div className="p-5 rounded-xl border" style={{ backgroundColor: COLORS.surface, borderColor: COLORS.border }}>
+            <h3 className="font-bold mb-4" style={{ color: COLORS.textMain }}>Unscheduled Drafts</h3>
+            <div className="space-y-3">
+               {[1, 2, 3].map((i) => (
+                 <div key={i} className="p-3 rounded border hover:border-white/20 cursor-grab active:cursor-grabbing transition-colors" style={{ borderColor: COLORS.border, backgroundColor: COLORS.surfaceHighlight }}>
+                    <div className="flex justify-between mb-2">
+                       <Badge color={COLORS.textMuted}>Idea</Badge>
+                       <MoreHorizontal size={14} style={{ color: COLORS.textMuted }}/>
+                    </div>
+                    <p className="text-sm font-medium truncate" style={{ color: COLORS.textMain }}>Why I chose React over Vue...</p>
+                 </div>
+               ))}
+            </div>
+         </div>
+      </div>
+    </div>
+  </div>
+);
+
+const CommunityView = () => (
+  <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+     <div className="relative rounded-2xl overflow-hidden h-48 mb-8 border" style={{ borderColor: COLORS.border }}>
+        <div className="absolute inset-0" style={{ background: `linear-gradient(to right, ${COLORS.surface}, ${COLORS.surfaceHighlight})` }}></div>
+        <div className="absolute inset-0 opacity-20" style={{ backgroundImage: `radial-gradient(${COLORS.primary} 1px, transparent 1px)`, backgroundSize: '20px 20px' }}></div>
+        <div className="absolute bottom-6 left-6 flex items-end gap-4">
+           <div className="w-20 h-20 rounded-xl border-4 shadow-xl flex items-center justify-center" style={{ backgroundColor: COLORS.primary, borderColor: COLORS.background }}>
+              <span className="text-3xl font-bold text-black">A</span>
+           </div>
+           <div>
+              <h1 className="text-2xl font-bold mb-1" style={{ color: COLORS.textMain }}>Alex Builder</h1>
+              <div className="flex flex-wrap items-center gap-4 text-sm" style={{ color: COLORS.textMuted }}>
+                 <span className="font-medium" style={{ color: COLORS.textMain }}>@alexbuilds</span>
+                 <div className="h-4 w-px bg-white/10"></div>
+                 <span className="flex items-center gap-1.5 hover:text-[#1DA1F2] transition-colors cursor-pointer"><Twitter size={14}/> 1.2k</span>
+                 <span className="flex items-center gap-1.5 hover:text-[#FF0000] transition-colors cursor-pointer"><Youtube size={14}/> 335</span>
+                 <span className="flex items-center gap-1.5 hover:text-[#0A66C2] transition-colors cursor-pointer"><Linkedin size={14}/> 850</span>
+              </div>
+           </div>
+        </div>
+        <div className="absolute bottom-6 right-6">
+           <ActionButton primary>Edit Profile</ActionButton>
+        </div>
+     </div>
+
+     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-6">
+           <h3 className="font-bold text-lg" style={{ color: COLORS.textMain }}>Community Feed</h3>
+           {[1, 2, 3].map(i => (
+              <div key={i} className="p-5 rounded-xl border" style={{ backgroundColor: COLORS.surface, borderColor: COLORS.border }}>
+                 <div className="flex justify-between items-start mb-4">
+                    <div className="flex gap-3">
+                       <div className="w-10 h-10 rounded-full bg-gray-700"></div>
+                       <div>
+                          <p className="font-bold text-sm" style={{ color: COLORS.textMain }}>Sarah Dev <span style={{ color: COLORS.textMuted }} className="font-normal">shipped a fix</span></p>
+                          <p className="text-xs" style={{ color: COLORS.textMuted }}>2h ago</p>
+                       </div>
+                    </div>
+                    <Badge color={COLORS.primary}>Shipped</Badge>
+                 </div>
+                 <p className="text-sm mb-4 leading-relaxed" style={{ color: COLORS.textMain }}>
+                    Finally fixed the memory leak in the dashboard! It turned out to be an unmounted component listener. Performance is up 20%.
+                 </p>
+                 <div className="h-40 rounded-lg border flex items-center justify-center text-xs font-mono" style={{ backgroundColor: 'rgba(0,0,0,0.4)', borderColor: 'rgba(255,255,255,0.05)', color: COLORS.textMuted }}>
+                    [Code Snippet Preview]
+                 </div>
+                 <div className="flex gap-4 border-t pt-4" style={{ borderColor: COLORS.border }}>
+                    <button className="flex items-center gap-2 text-xs font-medium hover:brightness-125 transition-colors" style={{ color: COLORS.textMuted }}>
+                       <ThumbsUp size={14}/> 24
+                    </button>
+                    <button className="flex items-center gap-2 text-xs font-medium hover:brightness-125 transition-colors" style={{ color: COLORS.textMain }}>
+                       <MessageSquare size={14}/> 4 Comments
+                    </button>
+                 </div>
+              </div>
+           ))}
+        </div>
+
+        <div className="space-y-6">
+           <div className="p-5 rounded-xl border" style={{ backgroundColor: COLORS.surface, borderColor: COLORS.border }}>
+              <h3 className="font-bold mb-4" style={{ color: COLORS.textMain }}>Trending Projects</h3>
+              <div className="space-y-4">
+                 {[1, 2, 3].map(i => (
+                    <div key={i} className="flex items-center gap-3 cursor-pointer group">
+                       <div className="w-10 h-10 rounded flex items-center justify-center font-bold text-xs" style={{ backgroundColor: COLORS.surfaceHighlight, color: COLORS.textMuted }}>#{i}</div>
+                       <div className="flex-1">
+                          <p className="font-bold text-sm transition-colors" style={{ color: COLORS.textMain }}>SaasUi</p>
+                          <p className="text-xs" style={{ color: COLORS.textMuted }}>UI Kit for builders</p>
+                       </div>
+                       <div className="text-xs font-bold" style={{ color: COLORS.accent }}>+12%</div>
+                    </div>
+                 ))}
+              </div>
+           </div>
+        </div>
+     </div>
+  </div>
+);
+
+// --- Main App Component ---
+
+const AtumApp = () => {
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  return (
+    <div className="min-h-screen font-sans selection:bg-[#d2ff28] selection:text-black" 
+         style={{ 
+           backgroundColor: COLORS.background, 
+           color: COLORS.textMain 
+         }}>
+      
+      {/* Mobile Header */}
+      <div className="lg:hidden flex items-center justify-between p-4 border-b" style={{ backgroundColor: COLORS.surface, borderColor: COLORS.border }}>
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded bg-[#d2ff28] flex items-center justify-center">
+            <span className="font-bold text-black">A</span>
+          </div>
+          <span className="font-bold text-lg" style={{ color: COLORS.textMain }}>Atum</span>
+        </div>
+        <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} style={{ color: COLORS.textMain }}>
+          {mobileMenuOpen ? <X /> : <Menu />}
+        </button>
+      </div>
+
+      <div className="flex h-screen overflow-hidden">
+        
+        {/* Sidebar */}
+        <aside 
+          className={`
+            fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0
+            border-r flex flex-col
+            ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+          `}
+          style={{ backgroundColor: COLORS.surface, borderColor: COLORS.border }}
+        >
+          {/* Logo Area */}
+          <div className="p-6 hidden lg:flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl shadow-[0_0_15px_rgba(210,255,40,0.2)] flex items-center justify-center" style={{ backgroundColor: COLORS.primary }}>
+              <Zap size={24} className="text-black fill-black" />
+            </div>
+            <div>
+              <h1 className="font-bold text-xl tracking-wide" style={{ color: COLORS.textMain }}>ATUM</h1>
+              <p className="text-[10px] tracking-widest uppercase opacity-60" style={{ color: COLORS.textMain }}>Build Publicly</p>
+            </div>
+          </div>
+
+          {/* Navigation */}
+          <nav className="flex-1 py-6 space-y-1">
+            <SidebarItem 
+              icon={<Layout size={20} />} 
+              label="Dashboard" 
+              active={activeTab === 'dashboard'} 
+              onClick={() => setActiveTab('dashboard')} 
+            />
+            <SidebarItem 
+              icon={<Activity size={20} />} 
+              label="Smart Tracker" 
+              active={activeTab === 'tracker'} 
+              onClick={() => setActiveTab('tracker')} 
+            />
+            <SidebarItem 
+              icon={<PenTool size={20} />} 
+              label="Narrative Engine" 
+              active={activeTab === 'narrative'} 
+              onClick={() => setActiveTab('narrative')} 
+            />
+             <SidebarItem 
+              icon={<Lightbulb size={20} />} 
+              label="Parking Lot" 
+              active={activeTab === 'parking-lot'} 
+              onClick={() => setActiveTab('parking-lot')} 
+            />
+            <SidebarItem 
+              icon={<Share2 size={20} />} 
+              label="Publisher" 
+              active={activeTab === 'publisher'} 
+              onClick={() => setActiveTab('publisher')} 
+            />
+            <SidebarItem 
+              icon={<Users size={20} />} 
+              label="Community" 
+              active={activeTab === 'community'} 
+              onClick={() => setActiveTab('community')} 
+            />
+          </nav>
+
+          {/* User Profile Snippet */}
+          <div className="p-4 border-t" style={{ borderColor: COLORS.border }}>
+            <div className="flex items-center gap-3 p-2 rounded hover:bg-white/5 transition-colors cursor-pointer">
+              <div className="w-10 h-10 rounded-full border-2 bg-gray-800" style={{ borderColor: COLORS.primary }}></div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold truncate" style={{ color: COLORS.textMain }}>Alex Builder</p>
+                <p className="text-xs truncate" style={{ color: COLORS.textMuted }}>Pro Plan</p>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        {/* Main Content Area */}
+        <main className="flex-1 overflow-y-auto relative scroll-smooth">
+          {/* Top Bar */}
+          <header className="sticky top-0 z-40 backdrop-blur-md border-b px-8 py-4 flex justify-between items-center" style={{ backgroundColor: `${COLORS.background}CC`, borderColor: COLORS.border }}>
+            <div className="flex items-center gap-2 text-sm" style={{ color: COLORS.textMuted }}>
+              <span>Atum</span>
+              <ChevronRight size={14} />
+              <span className="capitalize" style={{ color: COLORS.textMain }}>{activeTab.replace('-', ' ')}</span>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="hidden md:flex relative">
+                 <Search size={16} className="absolute left-3 top-2.5" style={{ color: COLORS.textMuted }}/>
+                 <input 
+                    type="text" 
+                    placeholder="Search logs, drafts..." 
+                    className="pl-9 pr-4 py-2 rounded-full text-sm border focus:outline-none transition-colors bg-transparent w-64"
+                    style={{ borderColor: COLORS.border, color: COLORS.textMain }}
+                 />
+              </div>
+              <button className="p-2 rounded-full hover:bg-white/5 transition-colors relative" style={{ color: COLORS.textMain }}>
+                 <MessageSquare size={20} />
+                 <span className="absolute top-1 right-1 w-2 h-2 rounded-full border-2" style={{ backgroundColor: COLORS.accent, borderColor: COLORS.background }}></span>
+              </button>
+              <button className="hidden sm:flex px-3 py-1.5 rounded-full border text-xs font-bold items-center gap-2 transition-colors" 
+                style={{ borderColor: `${COLORS.primary}40`, color: COLORS.primary, backgroundColor: `${COLORS.primary}10` }}
+              >
+                <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: COLORS.primary }}></span>
+                System Operational
+              </button>
+            </div>
+          </header>
+
+          <div className="p-4 md:p-8 max-w-7xl mx-auto h-[calc(100vh-80px)]">
+            {activeTab === 'dashboard' && <DashboardView />}
+            {activeTab === 'tracker' && <TrackerView />}
+            {activeTab === 'narrative' && <NarrativeView />}
+            {activeTab === 'parking-lot' && <ParkingLotView />}
+            {activeTab === 'publisher' && <PublisherView />}
+            {activeTab === 'community' && <CommunityView />}
+          </div>
+        </main>
+
+      </div>
+    </div>
+  );
+};
+
+export default AtumApp;
