@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { supabase } from '../lib/supabase';
+import { db, auth } from '../lib/firebase';
+import { collection, addDoc, getDocs, deleteDoc, doc, query, where, serverTimestamp } from 'firebase/firestore';
 import { COMMUNITY_UPDATES } from '../data/mock';
 
 // --- Types ---
@@ -18,7 +19,7 @@ export interface IdeaItem {
     title: string;
     desc: string;
     tags: string[];
-    date: string; // Display string, derived from created_at
+    date: string;
 }
 
 export interface DraftItem {
@@ -49,94 +50,107 @@ export const useAtumStore = create<AtumState>((set, get) => ({
     activityLog: [],
     ideas: [],
     drafts: [],
-    communityUpdates: COMMUNITY_UPDATES, // Static for now
+    communityUpdates: COMMUNITY_UPDATES,
     isLoading: false,
 
     fetchData: async () => {
+        const user = auth.currentUser;
+        if (!user) return; // Can't fetch if not logged in
+
         set({ isLoading: true });
 
-        // 1. Fetch Activity
-        const { data: activity } = await supabase
-            .from('activity_log')
-            .select('*')
-            .order('created_at', { ascending: false });
+        try {
+            // 1. Fetch Activity
+            // Note: Composite indexes might be required for where() + orderBy()
+            // Simplify for now: standard fetch, sort client side if index missing errors occur
+            const activityQ = query(collection(db, "activity"), where("userId", "==", user.uid));
+            const activitySnap = await getDocs(activityQ);
+            const activity = activitySnap.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
 
-        // 2. Fetch Ideas
-        const { data: ideas } = await supabase
-            .from('ideas')
-            .select('*')
-            .order('created_at', { ascending: false });
+            // 2. Fetch Ideas
+            const ideasQ = query(collection(db, "ideas"), where("userId", "==", user.uid));
+            const ideasSnap = await getDocs(ideasQ);
+            const ideas = ideasSnap.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
 
-        // 3. Fetch Drafts
-        const { data: drafts } = await supabase
-            .from('drafts')
-            .select('*')
-            .order('created_at', { ascending: false });
+            // 3. Fetch Drafts
+            const draftsQ = query(collection(db, "drafts"), where("userId", "==", user.uid));
+            const draftsSnap = await getDocs(draftsQ);
+            const drafts = draftsSnap.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
 
-        set({
-            isLoading: false,
-            activityLog: (activity || []).map(a => ({
-                ...a,
-                time: new Date(a.created_at).toLocaleDateString(), // Simple formatting
-                desc: a.description
-            })),
-            ideas: (ideas || []).map(i => ({
-                ...i,
-                desc: i.description,
-                date: new Date(i.created_at).toLocaleDateString()
-            })),
-            drafts: (drafts || []).map(d => ({
-                ...d,
-                // map db columns if needed
-            }))
-        });
+            set({
+                isLoading: false,
+                activityLog: activity.map(a => ({
+                    ...a,
+                    time: a.createdAt?.toDate().toLocaleDateString() || 'Just now',
+                    desc: a.description
+                })).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()), // fallback sort
+
+                ideas: ideas.map(i => ({
+                    ...i,
+                    desc: i.description,
+                    date: i.createdAt?.toDate().toLocaleDateString() || 'Just now'
+                })),
+
+                drafts: drafts
+            });
+        } catch (e) {
+            console.error("Error fetching data", e);
+            set({ isLoading: false });
+        }
     },
 
     addActivity: async (item) => {
-        const { error } = await supabase.from('activity_log').insert({
+        const user = auth.currentUser;
+        if (!user) return;
+
+        await addDoc(collection(db, "activity"), {
+            userId: user.uid,
             title: item.title,
             type: item.type,
             source: item.source,
-            description: item.desc
+            description: item.desc,
+            createdAt: serverTimestamp()
         });
 
-        if (!error) {
-            await get().fetchData();
-        }
+        await get().fetchData();
     },
 
     addIdea: async (item) => {
-        const { error } = await supabase.from('ideas').insert({
+        const user = auth.currentUser;
+        if (!user) return;
+
+        await addDoc(collection(db, "ideas"), {
+            userId: user.uid,
             title: item.title,
             description: item.desc,
-            tags: item.tags
+            tags: item.tags,
+            createdAt: serverTimestamp()
         });
 
-        if (!error) {
-            await get().fetchData();
-        }
+        await get().fetchData();
     },
 
     deleteIdea: async (id) => {
-        const { error } = await supabase.from('ideas').delete().eq('id', id);
-        if (!error) {
-            set(state => ({
-                ideas: state.ideas.filter(i => i.id !== id)
-            }));
-        }
+        await deleteDoc(doc(db, "ideas", id));
+        set(state => ({
+            ideas: state.ideas.filter(i => i.id !== id)
+        }));
     },
 
     addDraft: async (draft) => {
-        const { error } = await supabase.from('drafts').insert({
+        const user = auth.currentUser;
+        if (!user) return;
+
+        await addDoc(collection(db, "drafts"), {
+            userId: user.uid,
             title: draft.title,
             type: draft.type,
             platform: draft.platform,
             status: draft.status,
-            content: draft.content
+            content: draft.content,
+            createdAt: serverTimestamp()
         });
 
-        if (!error) {
-            await get().fetchData();
-        }
+        await get().fetchData();
     },
 }));

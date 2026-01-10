@@ -14,7 +14,7 @@ import React from 'react';
 import { Landing } from './pages/Landing';
 
 const RequireAuth = ({ children }: { children: React.ReactElement }) => {
-  const { session, loading } = useAuth();
+  const { user, loading } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -25,7 +25,7 @@ const RequireAuth = ({ children }: { children: React.ReactElement }) => {
     );
   }
 
-  if (!session) {
+  if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
