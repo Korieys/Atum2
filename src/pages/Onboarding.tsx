@@ -94,16 +94,16 @@ export const Onboarding = () => {
     };
 
     return (
-        <div className="min-h-screen bg-black text-green-500 font-mono p-4 md:p-8 flex items-center justify-center relative overflow-hidden">
+        <div className="min-h-screen bg-black text-primary font-mono p-4 md:p-8 flex items-center justify-center relative overflow-hidden">
             {/* CRT Scanline Effect */}
             <div className="absolute inset-0 pointer-events-none z-50 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%] opacity-20"></div>
 
-            <div className="w-full max-w-2xl border border-green-500/30 bg-black/90 p-6 md:p-10 rounded-lg shadow-[0_0_20px_rgba(34,197,94,0.2)] relative z-10">
-                <div className="flex items-center gap-3 mb-8 border-b border-green-500/30 pb-4">
-                    <TerminalSquare className="text-green-500" size={32} />
+            <div className="w-full max-w-2xl border border-primary/30 bg-black/90 p-6 md:p-10 rounded-lg shadow-[0_0_20px_rgba(210,255,40,0.2)] relative z-10">
+                <div className="flex items-center gap-3 mb-8 border-b border-primary/30 pb-4">
+                    <TerminalSquare className="text-primary" size={32} />
                     <div>
                         <h1 className="text-2xl font-bold tracking-tighter">BUILD_OS v1.0</h1>
-                        <p className="text-xs text-green-500/60">INITIALIZING USER PROFILE...</p>
+                        <p className="text-xs text-primary/60">INITIALIZING USER PROFILE...</p>
                     </div>
                 </div>
 
@@ -116,7 +116,7 @@ export const Onboarding = () => {
 
                     {/* Identity Section */}
                     <div className="space-y-4">
-                        <h2 className="text-sm font-bold uppercase tracking-widest text-green-400/80 border-b border-green-500/20 pb-1">01. Identity</h2>
+                        <h2 className="text-sm font-bold uppercase tracking-widest text-primary/80 border-b border-primary/20 pb-1">01. Identity</h2>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-1">
@@ -126,7 +126,7 @@ export const Onboarding = () => {
                                     required
                                     value={formData.username}
                                     onChange={e => setFormData({ ...formData, username: e.target.value })}
-                                    className="w-full bg-black border border-green-500/40 p-3 text-green-400 focus:outline-none focus:border-green-400 focus:shadow-[0_0_10px_rgba(34,197,94,0.3)] transition-all placeholder:text-green-900"
+                                    className="w-full bg-black border border-primary/40 p-3 text-primary focus:outline-none focus:border-primary focus:shadow-[0_0_10px_rgba(210,255,40,0.3)] transition-all placeholder:text-primary/30"
                                     placeholder="root_user"
                                 />
                             </div>
@@ -136,7 +136,7 @@ export const Onboarding = () => {
                                 <select
                                     value={formData.role}
                                     onChange={e => setFormData({ ...formData, role: e.target.value })}
-                                    className="w-full bg-black border border-green-500/40 p-3 text-green-400 focus:outline-none focus:border-green-400 cursor-pointer"
+                                    className="w-full bg-black border border-primary/40 p-3 text-primary focus:outline-none focus:border-primary cursor-pointer"
                                 >
                                     <option value="Engineer"> ENGINEER</option>
                                     <option value="Founder"> FOUNDER</option>
@@ -152,7 +152,7 @@ export const Onboarding = () => {
                             <textarea
                                 value={formData.bio}
                                 onChange={e => setFormData({ ...formData, bio: e.target.value })}
-                                className="w-full h-24 bg-black border border-green-500/40 p-3 text-green-400 focus:outline-none focus:border-green-400 text-sm placeholder:text-green-900 resize-none"
+                                className="w-full h-24 bg-black border border-primary/40 p-3 text-primary focus:outline-none focus:border-primary text-sm placeholder:text-primary/30 resize-none"
                                 placeholder="Execute your mission statement..."
                             />
                         </div>
@@ -160,15 +160,15 @@ export const Onboarding = () => {
 
                     {/* Tech Stack Section */}
                     <div className="space-y-4">
-                        <h2 className="text-sm font-bold uppercase tracking-widest text-green-400/80 border-b border-green-500/20 pb-1">02. Arsenal</h2>
+                        <h2 className="text-sm font-bold uppercase tracking-widest text-primary/80 border-b border-primary/20 pb-1">02. Arsenal</h2>
 
                         <div className="space-y-2 relative">
                             <label className="text-xs opacity-70">TECH STACK</label>
                             <div className="flex flex-wrap gap-2 mb-2 min-h-[30px]">
                                 {formData.techStack.map(tag => (
-                                    <span key={tag} className="bg-green-500/10 border border-green-500/40 px-2 py-1 text-xs flex items-center gap-2 hover:bg-green-500/20 transition-colors cursor-default">
+                                    <span key={tag} className="bg-primary/10 border border-primary/40 px-2 py-1 text-xs flex items-center gap-2 hover:bg-primary/20 transition-colors cursor-default">
                                         {tag}
-                                        <button type="button" onClick={() => removeTag(tag)} className="hover:text-green-200">×</button>
+                                        <button type="button" onClick={() => removeTag(tag)} className="hover:text-primary/80">×</button>
                                     </span>
                                 ))}
                             </div>
@@ -181,19 +181,19 @@ export const Onboarding = () => {
                                     setShowSuggestions(true);
                                 }}
                                 onFocus={() => setShowSuggestions(true)}
-                                className="w-full bg-black border border-green-500/40 p-3 text-green-400 focus:outline-none focus:border-green-400 placeholder:text-green-900"
+                                className="w-full bg-black border border-primary/40 p-3 text-primary focus:outline-none focus:border-primary placeholder:text-primary/30"
                                 placeholder="Add technologies..."
                             />
 
                             {/* Autocomplete Dropdown */}
                             {showSuggestions && filteredTech.length > 0 && (
-                                <div className="absolute top-full left-0 w-full mt-1 bg-black border border-green-500/50 z-50 shadow-xl max-h-40 overflow-y-auto">
+                                <div className="absolute top-full left-0 w-full mt-1 bg-black border border-primary/50 z-50 shadow-xl max-h-40 overflow-y-auto">
                                     {filteredTech.map(tech => (
                                         <button
                                             key={tech}
                                             type="button"
                                             onClick={() => handleTagAdd(tech)}
-                                            className="w-full text-left px-4 py-2 hover:bg-green-500/20 text-green-400 text-sm border-b border-green-900/30 last:border-0"
+                                            className="w-full text-left px-4 py-2 hover:bg-primary/20 text-primary text-sm border-b border-primary/30 last:border-0"
                                         >
                                             {tech}
                                         </button>
@@ -205,7 +205,7 @@ export const Onboarding = () => {
 
                     {/* Socials Section */}
                     <div className="space-y-4">
-                        <h2 className="text-sm font-bold uppercase tracking-widest text-green-400/80 border-b border-green-500/20 pb-1">03. Network Uplink</h2>
+                        <h2 className="text-sm font-bold uppercase tracking-widest text-primary/80 border-b border-primary/20 pb-1">03. Network Uplink</h2>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="flex items-center gap-2">
@@ -214,7 +214,7 @@ export const Onboarding = () => {
                                     type="text"
                                     value={formData.socials.twitter}
                                     onChange={e => setFormData({ ...formData, socials: { ...formData.socials, twitter: e.target.value } })}
-                                    className="w-full bg-black border-b border-green-500/30 py-2 text-green-400 focus:outline-none focus:border-green-500 placeholder:text-green-900 text-sm"
+                                    className="w-full bg-black border-b border-primary/30 py-2 text-primary focus:outline-none focus:border-primary placeholder:text-primary/30 text-sm"
                                     placeholder="Twitter Handle"
                                     autoComplete="off"
                                 />
@@ -225,7 +225,7 @@ export const Onboarding = () => {
                                     type="text"
                                     value={formData.socials.github}
                                     onChange={e => setFormData({ ...formData, socials: { ...formData.socials, github: e.target.value } })}
-                                    className="w-full bg-black border-b border-green-500/30 py-2 text-green-400 focus:outline-none focus:border-green-500 placeholder:text-green-900 text-sm"
+                                    className="w-full bg-black border-b border-primary/30 py-2 text-primary focus:outline-none focus:border-primary placeholder:text-primary/30 text-sm"
                                     placeholder="GitHub Username"
                                     autoComplete="off"
                                 />
@@ -236,7 +236,7 @@ export const Onboarding = () => {
                                     type="text"
                                     value={formData.socials.linkedin}
                                     onChange={e => setFormData({ ...formData, socials: { ...formData.socials, linkedin: e.target.value } })}
-                                    className="w-full bg-black border-b border-green-500/30 py-2 text-green-400 focus:outline-none focus:border-green-500 placeholder:text-green-900 text-sm"
+                                    className="w-full bg-black border-b border-primary/30 py-2 text-primary focus:outline-none focus:border-primary placeholder:text-primary/30 text-sm"
                                     placeholder="LinkedIn URL"
                                     autoComplete="off"
                                 />
@@ -247,7 +247,7 @@ export const Onboarding = () => {
                                     type="text"
                                     value={formData.socials.youtube}
                                     onChange={e => setFormData({ ...formData, socials: { ...formData.socials, youtube: e.target.value } })}
-                                    className="w-full bg-black border-b border-green-500/30 py-2 text-green-400 focus:outline-none focus:border-green-500 placeholder:text-green-900 text-sm"
+                                    className="w-full bg-black border-b border-primary/30 py-2 text-primary focus:outline-none focus:border-primary placeholder:text-primary/30 text-sm"
                                     placeholder="YouTube Channel"
                                     autoComplete="off"
                                 />
@@ -258,7 +258,7 @@ export const Onboarding = () => {
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full bg-green-500 text-black font-bold uppercase py-4 hover:bg-green-400 transition-colors flex items-center justify-center gap-2 tracking-widest mt-8 group disabled:opacity-50"
+                        className="w-full bg-primary text-black font-bold uppercase py-4 hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 tracking-widest mt-8 group disabled:opacity-50 shadow-[0_0_15px_rgba(210,255,40,0.4)]"
                     >
                         {isLoading ? <Loader2 className="animate-spin" /> : (
                             <>

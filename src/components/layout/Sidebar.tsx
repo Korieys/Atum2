@@ -6,9 +6,11 @@ import {
     PenTool,
     Share2,
     Users,
-    Lightbulb
+    Lightbulb,
+    Settings
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { useAtumStore } from '../../store/useAtumStore';
 
 interface SidebarItemProps {
     icon: React.ReactNode;
@@ -40,6 +42,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, active, to, onCl
 export const Sidebar = ({ mobileMenuOpen, setMobileMenuOpen }: { mobileMenuOpen?: boolean, setMobileMenuOpen?: (open: boolean) => void }) => {
     const location = useLocation();
     const currentPath = location.pathname;
+    const { userProfile, isLoading, error } = useAtumStore();
 
     // Simple active check: strictly equal or starts with for sub-routes
     const isActive = (path: string) => currentPath === path || (path !== '/' && currentPath.startsWith(path));
@@ -83,12 +86,30 @@ export const Sidebar = ({ mobileMenuOpen, setMobileMenuOpen }: { mobileMenuOpen?
                 ))}
             </nav>
 
-            <div className="p-4 border-t border-border">
-                <div className="bg-surfaceHighlight rounded-lg p-4">
-                    <h4 className="text-xs font-bold text-textMain mb-1">Status: Online</h4>
+            <div className="p-4 border-t border-border space-y-4">
+                {/* User Profile / Settings Link */}
+                <Link to="/app/settings" className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition-colors group">
+                    <div className="w-8 h-8 rounded bg-surfaceHighlight border border-border flex items-center justify-center text-xs font-bold text-primary">
+                        {userProfile?.username?.charAt(0).toUpperCase() || 'U'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-textMain truncate">{userProfile?.username || 'User'}</p>
+                        <p className="text-[10px] text-textMuted truncate">{userProfile?.role || 'Engineer'}</p>
+                    </div>
+                    <Settings size={14} className="text-textMuted group-hover:text-primary transition-colors" />
+                </Link>
+
+                {/* Status Indicator */}
+                <div className="bg-surfaceHighlight/30 rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-1">
+                        <h4 className="text-[10px] font-bold text-textMuted uppercase tracking-wider">System Status</h4>
+                        <span className={`text-[10px] font-bold ${error ? 'text-red-500' : 'text-primary'}`}>
+                            {error ? 'ERR' : 'OK'}
+                        </span>
+                    </div>
                     <div className="flex items-center gap-2 text-[10px] text-textMuted">
-                        <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                        Syncing changes...
+                        <div className={`w-1.5 h-1.5 rounded-full ${isLoading ? 'bg-accent animate-pulse' : (error ? 'bg-red-500' : 'bg-green-500')}`} />
+                        {isLoading ? 'Syncing...' : (error ? 'Offline' : 'Connected')}
                     </div>
                 </div>
             </div>

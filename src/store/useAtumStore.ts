@@ -14,6 +14,11 @@ export interface UserProfile {
         twitter?: string;
         linkedin?: string;
         youtube?: string;
+        website?: string;
+        github?: string;
+    };
+    stats?: {
+        reach?: string;
     };
 }
 
@@ -66,6 +71,7 @@ interface AtumState {
     updateDraft: (id: string, updates: Partial<DraftItem>) => Promise<void>;
     updateProfile: (profile: UserProfile) => Promise<void>;
     fetchCommunity: () => Promise<void>;
+    signOut: () => Promise<void>;
 }
 
 export const useAtumStore = create<AtumState>((set, get) => ({
@@ -250,7 +256,7 @@ export const useAtumStore = create<AtumState>((set, get) => ({
 
             set({
                 communityUpdates: profiles.map(u => ({
-                    id: crypto.randomUUID(),
+                    id: Math.random().toString(36).substring(7),
                     user: u.username,
                     action: `joined as ${u.role}`,
                     time: 'Just now',
@@ -262,5 +268,16 @@ export const useAtumStore = create<AtumState>((set, get) => ({
             console.error(e);
             set({ isLoading: false });
         }
+    },
+
+    signOut: async () => {
+        await auth.signOut();
+        set({
+            userProfile: null,
+            activityLog: [],
+            ideas: [],
+            drafts: [],
+            isInitialized: false
+        });
     }
 }));

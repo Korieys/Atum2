@@ -65,26 +65,28 @@ const TerminalFeedItem = ({ item, index }: { item: ActivityItem, index: number }
 };
 
 export const Dashboard = () => {
-    const { activityLog, drafts, communityUpdates } = useAtumStore();
+    const { activityLog, drafts, communityUpdates, userProfile, isLoading, error } = useAtumStore();
 
     // Computed Stats
     // Velocity: Activities in the last 7 days
     const now = new Date();
     const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const velocity = activityLog.filter(i => {
-        // Parse "Just now" or date string if needed, but we have internal timestamp in store usually?
-        // Getting date from string 'MM/DD/YYYY' roughly
         const date = new Date(i.time);
         return date > oneWeekAgo || i.time === 'Just now';
     }).length;
 
     // Streak: Consecutive days with activity
-    // Simplified: Just count unique days in log for now
     const uniqueDays = new Set(activityLog.map(i => i.time)).size;
     const streak = uniqueDays;
 
     // Colony: Total community members found
     const colony = communityUpdates.length;
+
+    // Reach: From profile stats or default
+    const reach = userProfile?.stats?.reach || "0";
+
+    const systemStatus = error ? "OFFLINE" : (isLoading ? "SYNCING" : "ONLINE");
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
@@ -95,12 +97,12 @@ export const Dashboard = () => {
 
                 <div className="relative z-10 flex flex-col md:flex-row justify-between md:items-end gap-6">
                     <div>
-                        <div className="flex items-center gap-2 mb-2 text-primary">
-                            <Radio size={16} className="animate-pulse" />
-                            <span className="text-xs font-mono font-bold tracking-widest uppercase">System Online</span>
+                        <div className={`flex items-center gap-2 mb-2 ${error ? "text-red-500" : "text-primary"}`}>
+                            <Radio size={16} className={isLoading ? "animate-pulse" : ""} />
+                            <span className="text-xs font-mono font-bold tracking-widest uppercase">System {systemStatus}</span>
                         </div>
                         <h1 className="text-3xl font-bold text-textMain">Mission Control</h1>
-                        <p className="text-textMuted">Build Cycle #{activityLog.length + 420} • <span className="text-textMain">Phase 3: Scaling</span></p>
+                        <p className="text-textMuted">Welcome back, <span className="text-textMain font-bold">{userProfile?.username || 'Pilot'}</span> • Phase 3: Scaling</p>
                     </div>
 
                     <div className="flex gap-4">
@@ -120,7 +122,7 @@ export const Dashboard = () => {
             {/* Section: Data Banks (Stats) */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <TechCard title="Velocity" value={velocity.toString()} subtext="actions / week" trend={velocity > 5 ? "RISING" : "STABLE"} />
-                <TechCard title="Reach" value="12.5k" subtext="impressions" trend="+8%" />
+                <TechCard title="Reach" value={reach} subtext="impressions" trend="MANUAL" />
                 <TechCard title="Colony" value={colony.toString()} subtext="peers found" trend="NEW" />
                 <TechCard title="Streak" value={streak.toString()} subtext="active days" trend="HOT" />
             </div>
@@ -136,9 +138,9 @@ export const Dashboard = () => {
                                 <Terminal size={14} className="text-primary" />
                                 LIVE_ACTIVITY_LOG
                             </h3>
-                            <div className="flex gap-1">
-                                <div className="w-2 h-2 rounded-full animate-pulse bg-accent" />
-                                <span className="text-[10px] font-mono uppercase text-textMuted">Syncing</span>
+                            <div className="flex gap-1 items-center">
+                                <div className={`w-2 h-2 rounded-full ${isLoading ? "bg-accent animate-pulse" : "bg-green-500"}`} />
+                                <span className="text-[10px] font-mono uppercase text-textMuted">{isLoading ? "Syncing..." : "Live"}</span>
                             </div>
                         </div>
                         <div className="p-6">

@@ -13,6 +13,7 @@ import { Loader2 } from 'lucide-react';
 import React from 'react';
 import { Landing } from './pages/Landing';
 import { Onboarding } from './pages/Onboarding';
+import { Settings } from './pages/Settings';
 
 const RequireAuth = ({ children }: { children: React.ReactElement }) => {
   const { user, loading } = useAuth();
@@ -65,6 +66,7 @@ function App() {
                   <Route path="/ideas" element={<ParkingLot />} />
                   <Route path="/publisher" element={<Publisher />} />
                   <Route path="/community" element={<Community />} />
+                  <Route path="/settings" element={<Settings />} />
                   <Route path="*" element={<Navigate to="/app" replace />} />
                 </Routes>
               </Layout>
