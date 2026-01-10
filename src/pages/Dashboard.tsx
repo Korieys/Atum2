@@ -68,8 +68,23 @@ export const Dashboard = () => {
     const { activityLog, drafts, communityUpdates } = useAtumStore();
 
     // Computed Stats
-    const velocity = activityLog.filter(i => i.type === 'commit').length * 4; // Mock calculation
-    const streak = 14; // We'd need actual dates for this, keeping static for MVP
+    // Velocity: Activities in the last 7 days
+    const now = new Date();
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const velocity = activityLog.filter(i => {
+        // Parse "Just now" or date string if needed, but we have internal timestamp in store usually?
+        // Getting date from string 'MM/DD/YYYY' roughly
+        const date = new Date(i.time);
+        return date > oneWeekAgo || i.time === 'Just now';
+    }).length;
+
+    // Streak: Consecutive days with activity
+    // Simplified: Just count unique days in log for now
+    const uniqueDays = new Set(activityLog.map(i => i.time)).size;
+    const streak = uniqueDays;
+
+    // Colony: Total community members found
+    const colony = communityUpdates.length;
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
@@ -85,7 +100,7 @@ export const Dashboard = () => {
                             <span className="text-xs font-mono font-bold tracking-widest uppercase">System Online</span>
                         </div>
                         <h1 className="text-3xl font-bold text-textMain">Mission Control</h1>
-                        <p className="text-textMuted">Build Cycle #429 • <span className="text-textMain">Phase 3: Scaling</span></p>
+                        <p className="text-textMuted">Build Cycle #{activityLog.length + 420} • <span className="text-textMain">Phase 3: Scaling</span></p>
                     </div>
 
                     <div className="flex gap-4">
@@ -104,10 +119,10 @@ export const Dashboard = () => {
 
             {/* Section: Data Banks (Stats) */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <TechCard title="Velocity" value={velocity.toString()} subtext="commits/wk estim." trend="+12%" />
+                <TechCard title="Velocity" value={velocity.toString()} subtext="actions / week" trend={velocity > 5 ? "RISING" : "STABLE"} />
                 <TechCard title="Reach" value="12.5k" subtext="impressions" trend="+8%" />
-                <TechCard title="Colony" value="340" subtext="members" trend="+3" />
-                <TechCard title="Streak" value={streak.toString()} subtext="days active" trend="HOT" />
+                <TechCard title="Colony" value={colony.toString()} subtext="peers found" trend="NEW" />
+                <TechCard title="Streak" value={streak.toString()} subtext="active days" trend="HOT" />
             </div>
 
             {/* Section: Main Content Grid */}

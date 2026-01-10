@@ -2,9 +2,30 @@
 import { Twitter, Youtube, Linkedin, ThumbsUp, MessageSquare } from 'lucide-react';
 import { ActionButton } from '../components/ui/ActionButton';
 import { Badge } from '../components/ui/Badge';
+import { useAtumStore } from '../store/useAtumStore';
+import { useEffect } from 'react';
 
 
 export const Community = () => {
+    const { communityUpdates, fetchCommunity, isLoading } = useAtumStore();
+
+    useEffect(() => {
+        fetchCommunity();
+    }, []);
+
+    if (isLoading) {
+        return (
+            <div className="animate-pulse space-y-4">
+                <div className="h-8 w-1/3 bg-white/5 rounded"></div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {[1, 2, 3].map(i => (
+                        <div key={i} className="h-48 bg-white/5 rounded-xl border border-white/5"></div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="relative rounded-2xl overflow-hidden h-48 mb-8 border border-border bg-gradient-to-r from-surface to-surfaceHighlight">
@@ -32,48 +53,61 @@ export const Community = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-6">
                     <h3 className="font-bold text-lg text-textMain">Community Feed</h3>
-                    {[1, 2, 3].map(i => (
-                        <div key={i} className="p-5 rounded-xl border border-border bg-surface">
-                            <div className="flex justify-between items-start mb-4">
-                                <div className="flex gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-gray-700"></div>
-                                    <div>
-                                        <p className="font-bold text-sm text-textMain">Sarah Dev <span className="text-textMuted font-normal">shipped a fix</span></p>
-                                        <p className="text-xs text-textMuted">2h ago</p>
-                                    </div>
-                                </div>
-                                <Badge>Shipped</Badge>
-                            </div>
-                            <p className="text-sm mb-4 leading-relaxed text-textMain">
-                                Finally fixed the memory leak in the dashboard! It turned out to be an unmounted component listener. Performance is up 20%.
-                            </p>
-                            <div className="h-40 rounded-lg border border-white/5 flex items-center justify-center text-xs font-mono bg-black/40 text-textMuted mb-4">
-                                [Code Snippet Preview]
-                            </div>
-                            <div className="flex gap-4 border-t border-border pt-4">
-                                <button className="flex items-center gap-2 text-xs font-medium hover:brightness-125 transition-colors text-textMuted hover:text-primary">
-                                    <ThumbsUp size={14} /> 24
-                                </button>
-                                <button className="flex items-center gap-2 text-xs font-medium hover:brightness-125 transition-colors text-textMain hover:text-primary">
-                                    <MessageSquare size={14} /> 4 Comments
-                                </button>
-                            </div>
+                    {communityUpdates.length === 0 ? (
+                        <div className="p-8 text-center text-textMuted border border-border bg-surface rounded-xl">
+                            No builders found yet. Be the first!
                         </div>
-                    ))}
+                    ) : (
+                        communityUpdates.map((p: any, i) => (
+                            <div key={i} className="p-5 rounded-xl border border-border bg-surface">
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className="flex gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary">
+                                            {p.username?.[0]?.toUpperCase()}
+                                        </div>
+                                        <div>
+                                            <p className="font-bold text-sm text-textMain">{p.username} <span className="text-textMuted font-normal">joined the mission</span></p>
+                                            <p className="text-xs text-textMuted">{p.role}</p>
+                                        </div>
+                                    </div>
+                                    <Badge>New</Badge>
+                                </div>
+                                <p className="text-sm mb-4 leading-relaxed text-textMain">
+                                    {p.bio || "Just started building."}
+                                </p>
+                                {p.techStack && (
+                                    <div className="flex gap-2 flex-wrap mb-4">
+                                        {p.techStack.map((t: string) => (
+                                            <span key={t} className="text-xs font-mono bg-black/40 text-textMuted px-2 py-1 rounded">
+                                                {t}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                                <div className="flex gap-4 border-t border-border pt-4">
+                                    <button className="flex items-center gap-2 text-xs font-medium hover:brightness-125 transition-colors text-textMuted hover:text-primary">
+                                        <ThumbsUp size={14} /> 0
+                                    </button>
+                                    <button className="flex items-center gap-2 text-xs font-medium hover:brightness-125 transition-colors text-textMain hover:text-primary">
+                                        <MessageSquare size={14} /> Connect
+                                    </button>
+                                </div>
+                            </div>
+                        )))}
                 </div>
 
                 <div className="space-y-6">
                     <div className="p-5 rounded-xl border border-border bg-surface">
-                        <h3 className="font-bold mb-4 text-textMain">Trending Projects</h3>
+                        <h3 className="font-bold mb-4 text-textMain">Trending Builders</h3>
                         <div className="space-y-4">
-                            {[1, 2, 3].map(i => (
+                            {communityUpdates.slice(0, 3).map((p: any, i) => (
                                 <div key={i} className="flex items-center gap-3 cursor-pointer group">
-                                    <div className="w-10 h-10 rounded flex items-center justify-center font-bold text-xs bg-surfaceHighlight text-textMuted group-hover:bg-primary group-hover:text-black transition-colors">#{i}</div>
+                                    <div className="w-10 h-10 rounded flex items-center justify-center font-bold text-xs bg-surfaceHighlight text-textMuted group-hover:bg-primary group-hover:text-black transition-colors">#{i + 1}</div>
                                     <div className="flex-1">
-                                        <p className="font-bold text-sm transition-colors text-textMain group-hover:text-primary">SaasUi</p>
-                                        <p className="text-xs text-textMuted">UI Kit for builders</p>
+                                        <p className="font-bold text-sm transition-colors text-textMain group-hover:text-primary">{p.username}</p>
+                                        <p className="text-xs text-textMuted">{p.role}</p>
                                     </div>
-                                    <div className="text-xs font-bold text-accent">+12%</div>
+                                    <div className="text-xs font-bold text-accent">Hot</div>
                                 </div>
                             ))}
                         </div>

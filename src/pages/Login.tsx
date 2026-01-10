@@ -1,43 +1,93 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { auth } from '../lib/firebase';
-import { GoogleAuthProvider, GithubAuthProvider, signInWithPopup } from 'firebase/auth';
-import { Github, Loader2 } from 'lucide-react';
+import {
+    GoogleAuthProvider,
+    GithubAuthProvider,
+    signInWithPopup,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword
+} from 'firebase/auth';
+import { Github, Loader2, Mail } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/AuthProvider';
 
 export const Login = () => {
     const [isLoading, setIsLoading] = useState(false);
+    const [isSignUp, setIsSignUp] = useState(false);
     const [message, setMessage] = useState('');
+
+    // Email Auth State
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+
     const navigate = useNavigate();
     const { user } = useAuth();
+    const isLoggingIn = useRef(false);
 
     useEffect(() => {
-        if (user) {
+        if (user && !isLoggingIn.current) {
             navigate('/app');
         }
     }, [user, navigate]);
 
     const handleGoogleLogin = async () => {
+        console.log("Starting Google Login...");
         setIsLoading(true);
         setMessage('');
+        isLoggingIn.current = true;
         const provider = new GoogleAuthProvider();
         try {
             await signInWithPopup(auth, provider);
+            navigate('/app');
         } catch (error: any) {
             setMessage(error.message);
             setIsLoading(false);
+            isLoggingIn.current = false;
         }
     };
 
     const handleGithubLogin = async () => {
         setIsLoading(true);
         setMessage('');
+        isLoggingIn.current = true;
         const provider = new GithubAuthProvider();
         try {
             await signInWithPopup(auth, provider);
+            navigate('/app');
         } catch (error: any) {
             setMessage(error.message);
             setIsLoading(false);
+            isLoggingIn.current = false;
+        }
+    };
+
+    const handleEmailAuth = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsLoading(true);
+        setMessage('');
+        isLoggingIn.current = true;
+
+        try {
+            if (isSignUp) {
+                await createUserWithEmailAndPassword(auth, email, password);
+                navigate('/app/onboarding');
+            } else {
+                await signInWithEmailAndPassword(auth, email, password);
+                navigate('/app');
+            }
+        } catch (error: any) {
+            console.error("Auth Error:", error);
+            let msg = error.message.replace('Firebase: ', '');
+            if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                msg = "Invalid email or password.";
+            } else if (error.code === 'auth/email-already-in-use') {
+                msg = "Account already exists. Try signing in.";
+            } else if (error.code === 'auth/weak-password') {
+                msg = "Password should be at least 6 characters.";
+            }
+            setMessage(msg);
+            setIsLoading(false);
+            isLoggingIn.current = false;
         }
     };
 
@@ -87,10 +137,49 @@ export const Login = () => {
 
                     <div className="relative py-4">
                         <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border"></div></div>
-                        <div className="relative flex justify-center text-xs uppercase"><span className="bg-surface px-2 text-textMuted">Login Options</span></div>
+                        <div className="relative flex justify-center text-xs uppercase"><span className="bg-surface px-2 text-textMuted">Or continue with email</span></div>
                     </div>
 
-                    {message && <p className="text-red-400 text-xs text-center mt-2">{message}</p>}
+                    <form onSubmit={handleEmailAuth} className="space-y-4">
+                        <div className="space-y-3">
+                            <input
+                                type="email"
+                                required
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="Email address"
+                                className="w-full bg-black/20 border border-border rounded-xl p-3 text-white placeholder:text-textMuted focus:outline-none focus:border-primary/50 text-sm"
+                            />
+                            <input
+                                type="password"
+                                required
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="Password"
+                                className="w-full bg-black/20 border border-border rounded-xl p-3 text-white placeholder:text-textMuted focus:outline-none focus:border-primary/50 text-sm"
+                            />
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={isLoading}
+                            className="w-full bg-primary hover:bg-primaryHighlight text-black p-3 rounded-xl font-bold transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 shadow-lg flex items-center justify-center gap-2"
+                        >
+                            {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Mail size={18} />}
+                            {isSignUp ? 'Create Account' : 'Sign In'}
+                        </button>
+                    </form>
+
+                    <div className="text-center pt-2">
+                        <button
+                            onClick={() => setIsSignUp(!isSignUp)}
+                            className="text-xs text-textMuted hover:text-primary transition-colors hover:underline"
+                        >
+                            {isSignUp ? "Already have an account? Sign in" : "Don't have an account? Sign up"}
+                        </button>
+                    </div>
+
+                    {message && <p className="text-red-400 text-xs text-center mt-2 bg-red-500/10 p-2 rounded">{message}</p>}
                 </div>
             </div>
         </div>

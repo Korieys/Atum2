@@ -1,10 +1,42 @@
-
-import { Twitter, Linkedin, Youtube, Plus, MoreHorizontal } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { ActionButton } from '../components/ui/ActionButton';
 import { Badge } from '../components/ui/Badge';
-
+import { useAtumStore } from '../store/useAtumStore';
+import type { DraftItem } from '../store/useAtumStore';
+import { useAuth } from '../components/auth/AuthProvider';
 
 export const Publisher = () => {
+    const { drafts, updateDraft, addDraft, isLoading } = useAtumStore();
+    const { user } = useAuth(); // kept for check in handleCreateDraft
+
+    const handleStatusChange = async (id: string, newStatus: DraftItem['status']) => {
+        await updateDraft(id, { status: newStatus });
+    };
+
+    const handleCreateDraft = async () => {
+        const title = prompt("Enter draft title:");
+        if (!title) return;
+
+        // Ensure user is logged in before adding draft
+        if (!user) return;
+
+        await addDraft({
+            title,
+            type: 'text',
+            platform: 'twitter',
+            status: 'Draft',
+            content: ''
+        });
+    };
+
+    const draftsList = drafts.filter(d => d.status === 'Draft');
+    const scheduledList = drafts.filter(d => d.status === 'Ready');
+    const publishedList = drafts.filter(d => d.status === 'Published');
+
+    if (isLoading) {
+        return <div className="p-8 text-center text-textMuted animate-pulse">Loading publisher...</div>;
+    }
+
     return (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex justify-between items-center mb-8">
@@ -13,59 +45,75 @@ export const Publisher = () => {
                     <p className="text-textMuted">Schedule and manage your cross-platform content.</p>
                 </div>
                 <div className="flex gap-2">
-                    <div className="flex items-center -space-x-2 mr-4 hidden sm:flex">
-                        <div className="w-8 h-8 rounded-full border-2 border-background bg-[#1DA1F2] flex items-center justify-center"><Twitter size={14} className="text-white" /></div>
-                        <div className="w-8 h-8 rounded-full border-2 border-background bg-[#0A66C2] flex items-center justify-center"><Linkedin size={14} className="text-white" /></div>
-                        <div className="w-8 h-8 rounded-full border-2 border-background bg-[#FF0000] flex items-center justify-center"><Youtube size={14} className="text-white" /></div>
-                    </div>
-                    <ActionButton primary><Plus size={16} /> New Post</ActionButton>
+                    <ActionButton primary onClick={handleCreateDraft}><Plus size={16} /> New Post</ActionButton>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                {/* Calendar Grid */}
-                <div className="lg:col-span-3">
-                    <div className="grid grid-cols-7 gap-px border border-border rounded-t-xl overflow-hidden mb-6 bg-border">
-                        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => (
-                            <div key={d} className="p-3 text-center text-xs font-bold uppercase tracking-wider bg-surface text-textMuted">{d}</div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                {/* 1. Unscheduled Drafts */}
+                <div className="p-5 rounded-xl border border-border bg-surface h-fit">
+                    <h3 className="font-bold mb-4 text-textMain flex items-center gap-2">
+                        Drafts <Badge variant="secondary">{draftsList.length}</Badge>
+                    </h3>
+                    <div className="space-y-3">
+                        {draftsList.map((d) => (
+                            <div key={d.id} className="p-3 rounded border border-border bg-surfaceHighlight hover:border-white/20 transition-all group">
+                                <div className="flex justify-between mb-2">
+                                    <Badge variant="outline">{d.platform}</Badge>
+                                </div>
+                                <p className="text-sm font-medium truncate text-textMain mb-2">{d.title}</p>
+                                <button
+                                    onClick={() => handleStatusChange(d.id, 'Ready')}
+                                    className="text-xs bg-primary/10 text-primary w-full py-2 rounded hover:bg-primary hover:text-black transition-colors"
+                                >
+                                    Schedule
+                                </button>
+                            </div>
                         ))}
-                        {Array.from({ length: 35 }).map((_, i) => (
-                            <div key={i} className="min-h-[100px] p-2 relative group transition-colors hover:bg-white/5 bg-surface">
-                                <span className="text-xs opacity-30 absolute top-2 right-2 text-textMain">{i + 1}</span>
-                                {i === 2 && (
-                                    <div className="mt-4 p-2 rounded text-xs font-medium border-l-2 cursor-pointer hover:scale-105 transition-transform bg-primary/10 border-primary text-textMain">
-                                        <Twitter size={10} className="mb-1 opacity-70" />
-                                        Launch Day
-                                    </div>
-                                )}
-                                {i === 4 && (
-                                    <div className="mt-4 p-2 rounded text-xs font-medium border-l-2 cursor-pointer hover:scale-105 transition-transform bg-accent/10 border-accent text-textMain">
-                                        <Youtube size={10} className="mb-1 opacity-70" />
-                                        Demo
-                                    </div>
-                                )}
+                        {draftsList.length === 0 && <p className="text-xs text-textMuted italic">No drafts yet.</p>}
+                    </div>
+                </div>
+
+                {/* 2. Scheduled / Ready */}
+                <div className="p-5 rounded-xl border border-border bg-surface h-fit">
+                    <h3 className="font-bold mb-4 text-textMain flex items-center gap-2">
+                        Scheduled <Badge variant="secondary">{scheduledList.length}</Badge>
+                    </h3>
+                    <div className="space-y-3">
+                        {scheduledList.map((d) => (
+                            <div key={d.id} className="p-3 rounded border border-l-4 border-l-primary border-t border-r border-b border-border bg-surfaceHighlight hover:border-white/20 transition-all">
+                                <div className="flex justify-between mb-2">
+                                    <Badge variant="outline">{d.platform}</Badge>
+                                    <span className="text-xs text-textMuted">Ready</span>
+                                </div>
+                                <p className="text-sm font-medium truncate text-textMain mb-2">{d.title}</p>
+                                <button
+                                    onClick={() => handleStatusChange(d.id, 'Published')}
+                                    className="text-xs bg-green-500/10 text-green-500 w-full py-2 rounded hover:bg-green-500 hover:text-black transition-colors"
+                                >
+                                    Publish Now
+                                </button>
+                            </div>
+                        ))}
+                        {scheduledList.length === 0 && <p className="text-xs text-textMuted italic">Nothing scheduled.</p>}
+                    </div>
+                </div>
+
+                {/* 3. Published History */}
+                <div className="p-5 rounded-xl border border-border bg-surface h-fit opacity-70 hover:opacity-100 transition-opacity">
+                    <h3 className="font-bold mb-4 text-textMain flex items-center gap-2">
+                        Published <Badge variant="secondary">{publishedList.length}</Badge>
+                    </h3>
+                    <div className="space-y-3">
+                        {publishedList.map((d) => (
+                            <div key={d.id} className="p-3 rounded border border-border bg-black/20">
+                                <p className="text-xs text-textMuted line-through">{d.title}</p>
                             </div>
                         ))}
                     </div>
                 </div>
 
-                {/* Sidebar Queue */}
-                <div className="space-y-6">
-                    <div className="p-5 rounded-xl border border-border bg-surface">
-                        <h3 className="font-bold mb-4 text-textMain">Unscheduled Drafts</h3>
-                        <div className="space-y-3">
-                            {[1, 2, 3].map((i) => (
-                                <div key={i} className="p-3 rounded border border-border bg-surfaceHighlight hover:border-white/20 cursor-grab active:cursor-grabbing transition-colors">
-                                    <div className="flex justify-between mb-2">
-                                        <Badge variant="default">Idea</Badge>
-                                        <MoreHorizontal size={14} className="text-textMuted" />
-                                    </div>
-                                    <p className="text-sm font-medium truncate text-textMain">Why I chose React over Vue...</p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     );

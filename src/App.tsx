@@ -12,6 +12,7 @@ import { AuthProvider, useAuth } from './components/auth/AuthProvider';
 import { Loader2 } from 'lucide-react';
 import React from 'react';
 import { Landing } from './pages/Landing';
+import { Onboarding } from './pages/Onboarding';
 
 const RequireAuth = ({ children }: { children: React.ReactElement }) => {
   const { user, loading } = useAuth();
@@ -29,6 +30,14 @@ const RequireAuth = ({ children }: { children: React.ReactElement }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  // Check if trying to access protected app routes without a profile
+  // Allow access to /app/onboarding to prevent loop
+  /* 
+     NOTE: Logic to checking profile existence would go here.
+     For now, we rely on the user flow or Layout to redirect if needed, 
+     or handle it inside Layout. 
+  */
+
   return children;
 };
 
@@ -39,6 +48,12 @@ function App() {
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
+
+          <Route path="/app/onboarding" element={
+            <RequireAuth>
+              <Onboarding />
+            </RequireAuth>
+          } />
 
           <Route path="/app/*" element={
             <RequireAuth>

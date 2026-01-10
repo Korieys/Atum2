@@ -12,22 +12,58 @@ export const Narrative = () => {
     const [generatedContent, setGeneratedContent] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
 
-    const handleGenerate = () => {
+    const handleGenerate = async () => {
         setIsGenerating(true);
-        // Simulate AI generation
-        setTimeout(() => {
-            setGeneratedContent(`🚀 Just shipped a major update to the core engine!\n\nOptimized the rendering pipeline by 40% using a new virtual DOM strategy. This was a tricky refactor but totally worth it for the performance gains.\n\n#BuildInPublic #React #Performance`);
+        setGeneratedContent('');
+
+        try {
+            const prompt = `Write a ${vibe} social media post for ${activeTab === 'preview' ? 'Visual' : 'Twitter/LinkedIn'} based on these sources: ${source}.
+            Make it engaging and strictly follow the ${vibe} tone.`;
+
+            const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+
+            if (!apiKey) {
+                alert("Missing API Key. Please add VITE_OPENAI_API_KEY to .env");
+                setIsGenerating(false);
+                return;
+            }
+
+            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
+                },
+                body: JSON.stringify({
+                    model: "gpt-3.5-turbo",
+                    messages: [{ role: "user", content: prompt }],
+                    temperature: 0.7
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.error) {
+                throw new Error(data.error.message);
+            }
+
+            setGeneratedContent(data.choices[0].message.content);
+        } catch (error) {
+            console.error("Values:", error);
+            alert("Failed to generate content. See console for details.");
+        } finally {
             setIsGenerating(false);
-        }, 1500);
+        }
     };
 
-    const handleSaveDraft = () => {
+    const handleSaveDraft = async () => {
         if (!generatedContent) return;
-        addDraft({
+        await addDraft({
             title: `Update: ${vibe} - ${new Date().toLocaleDateString()}`,
             type: 'Social Post',
             status: 'Draft',
-            platform: 'Twitter'
+            platform: 'Twitter', // Defaulting for now
+            content: generatedContent
         });
         alert('Draft saved to Fabricator!');
     };

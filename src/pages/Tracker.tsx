@@ -93,43 +93,50 @@ export const Tracker = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-8">
-                    {/* Flat list for MVP functionality demonstration */}
                     <div>
                         <div className="flex items-center gap-4 mb-4">
-                            <span className="font-bold text-lg text-textMain">Make it Happen</span>
+                            <span className="font-bold text-lg text-textMain">Recent Activity</span>
                             <div className="h-px flex-1 bg-border"></div>
                         </div>
-                        <div className="space-y-4 relative pl-4 border-l-2 border-surfaceHighlight">
-                            {activityLog.map((item) => (
-                                <div key={item.id} className="relative group">
-                                    {/* Timeline Dot */}
-                                    <div
-                                        className={cn(
-                                            "absolute -left-[21px] top-1.5 w-3 h-3 rounded-full border-2 transition-colors bg-background",
-                                            item.type === 'milestone' ? "border-accent" : "border-primary"
-                                        )}
-                                    />
 
-                                    <div className="p-4 rounded-xl border border-border transition-all hover:translate-x-1 bg-surface">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <div className="flex items-center gap-2">
-                                                <Badge variant={item.type === 'milestone' ? 'accent' : 'primary'}>{item.type}</Badge>
-                                                <span className="text-xs text-textMuted">{item.source}</span>
+                        {activityLog.length === 0 ? (
+                            <div className="p-8 text-center rounded-xl border border-dashed border-border bg-surface/50">
+                                <p className="text-textMuted mb-2">No activity recorded yet.</p>
+                                <p className="text-xs text-textMuted/70">Actions you take in the app will appear here automatically.</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-4 relative pl-4 border-l-2 border-surfaceHighlight">
+                                {activityLog.map((item) => (
+                                    <div key={item.id} className="relative group">
+                                        {/* Timeline Dot */}
+                                        <div
+                                            className={cn(
+                                                "absolute -left-[21px] top-1.5 w-3 h-3 rounded-full border-2 transition-colors bg-background",
+                                                item.type === 'milestone' ? "border-accent" : "border-primary"
+                                            )}
+                                        />
+
+                                        <div className="p-4 rounded-xl border border-border transition-all hover:translate-x-1 bg-surface">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <div className="flex items-center gap-2">
+                                                    <Badge variant={item.type === 'milestone' ? 'accent' : 'primary'}>{item.type}</Badge>
+                                                    <span className="text-xs text-textMuted">{item.source}</span>
+                                                </div>
+                                                <span className="text-xs text-textMuted">{item.time}</span>
                                             </div>
-                                            <span className="text-xs text-textMuted">{item.time}</span>
+                                            <h3 className="font-bold text-lg mb-1 text-textMain">{item.title}</h3>
+                                            <p className="text-sm opacity-80 text-textMuted">{item.desc || item.details}</p>
+
+                                            {item.type === 'commit' && (
+                                                <div className="mt-3 p-2 rounded font-mono text-xs flex items-center gap-2 bg-black/30 text-textMuted">
+                                                    <GitCommit size={12} /> 7 files changed
+                                                </div>
+                                            )}
                                         </div>
-                                        <h3 className="font-bold text-lg mb-1 text-textMain">{item.title}</h3>
-                                        <p className="text-sm opacity-80 text-textMuted">{item.desc || item.details}</p>
-
-                                        {item.type === 'commit' && (
-                                            <div className="mt-3 p-2 rounded font-mono text-xs flex items-center gap-2 bg-black/30 text-textMuted">
-                                                <GitCommit size={12} /> 7 files changed
-                                            </div>
-                                        )}
                                     </div>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
 
