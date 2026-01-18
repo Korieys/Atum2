@@ -1,14 +1,16 @@
 import { useState } from 'react';
-import { Zap, Twitter, Linkedin, Image as ImageIcon } from 'lucide-react';
+import { Zap, Twitter, Linkedin, Image as ImageIcon, Youtube, MessageSquare } from 'lucide-react';
 import { ActionButton } from '../components/ui/ActionButton';
 import { cn } from '../lib/utils';
 import { useAtumStore } from '../store/useAtumStore';
 
 export const Narrative = () => {
-    const { addDraft } = useAtumStore();
+    const { addDraft, activityLog } = useAtumStore();
     const [activeTab, setActiveTab] = useState('editor');
     const [source, setSource] = useState('Recent Commits');
+    const [customContext, setCustomContext] = useState('');
     const [vibe, setVibe] = useState('Technical');
+    const [platform, setPlatform] = useState('Twitter');
     const [generatedContent, setGeneratedContent] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
 
@@ -17,13 +19,67 @@ export const Narrative = () => {
         setGeneratedContent('');
 
         try {
-            const prompt = `Write a ${vibe} social media post for ${activeTab === 'preview' ? 'Visual' : 'Twitter/LinkedIn'} based on these sources: ${source}.
-            Make it engaging and strictly follow the ${vibe} tone.`;
+            // 1. Gather Context
+            let contextData = "";
+            if (source === 'Recent Commits') {
+                const recentCommits = activityLog
+                    .filter(a => a.type === 'commit')
+                    .slice(0, 10)
+                    .map(c => `- ${c.title} (${c.desc})`)
+                    .join('\n');
+
+                const commitData = recentCommits || "No recent commits found.";
+
+                if (customContext) {
+                    contextData = `User Guidance: ${customContext}\n\nRecent Technical Activity:\n${commitData}`;
+                } else {
+                    contextData = commitData;
+                }
+            } else if (source === 'Custom Topic') {
+                contextData = customContext || "No topic provided. Write a generic update about building cool tech.";
+            } else {
+                contextData = "General project update about progress.";
+            }
+
+            // 2. Construct Prompt based on Platform
+            let prompt = "";
+            const basePrompt = `Context:\n${contextData}\n\nTone: ${vibe}\n`;
+
+            switch (platform) {
+                case 'YouTube':
+                    prompt = `${basePrompt}
+                    Task: Write a structured script outline for a YouTube video devlog.
+                    Structure: 
+                    1. Hook (0:00-0:30)
+                    2. The Problem (What we tackled)
+                    3. The Solution (Technical deep dive on the commits)
+                    4. Results & CTA.
+                    output format: Markdown.`;
+                    break;
+                case 'Reddit':
+                    prompt = `${basePrompt}
+                    Task: Write a text-post for r/webdev or r/SaaS.
+                    Structure: Catchy but honest title. value-driven body explaining what was learned or built. Avoid self-promotion language. Focus on technical wins.`;
+                    break;
+                case 'LinkedIn':
+                    prompt = `${basePrompt}
+                    Task: Write a professional LinkedIn update.
+                    Structure: Hook line, bullet points of achievements, "What I learned", and a generic engaging question at the end.`;
+                    break;
+                case 'Twitter':
+                default:
+                    prompt = `${basePrompt}
+                    Task: Write a threaded tweet series (3-5 tweets).
+                    Style: Punchy, short sentences. Use emojis sparingly. Focus on "Building in public" narrative.`;
+                    break;
+            }
 
             const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
 
             if (!apiKey) {
-                alert("Missing API Key. Please add VITE_OPENAI_API_KEY to .env");
+                // Mock response if no API key for testing
+                // alert("Missing API Key..."); 
+                setGeneratedContent(`// SIMULATED OUTPUT FOR ${platform.toUpperCase()}\n\n[PROMPT SENDS]:\n${prompt}\n\n// Add API Key to .env to get real AI generation.`);
                 setIsGenerating(false);
                 return;
             }
@@ -59,10 +115,10 @@ export const Narrative = () => {
     const handleSaveDraft = async () => {
         if (!generatedContent) return;
         await addDraft({
-            title: `Update: ${vibe} - ${new Date().toLocaleDateString()}`,
+            title: `Draft: ${vibe} - ${new Date().toLocaleDateString()}`,
             type: 'Social Post',
             status: 'Draft',
-            platform: 'Twitter', // Defaulting for now
+            platform: platform,
             content: generatedContent
         });
         alert('Draft saved to Fabricator!');
@@ -77,7 +133,7 @@ export const Narrative = () => {
                     <div>
                         <label className="text-xs font-bold uppercase text-textMuted mb-3 block">Source Material</label>
                         <div className="space-y-2">
-                            {['Recent Commits', 'Completed Tasks', 'Meeting Notes'].map(s => (
+                            {['Recent Commits', 'Custom Topic', 'Completed Tasks'].map(s => (
                                 <button
                                     key={s}
                                     onClick={() => setSource(s)}
@@ -90,6 +146,18 @@ export const Narrative = () => {
                                 </button>
                             ))}
                         </div>
+                    </div>
+
+                    <div>
+                        <label className="text-xs font-bold uppercase text-textMuted mb-3 block">
+                            {source === 'Custom Topic' ? 'Topic Description' : 'Additional Context'}
+                        </label>
+                        <textarea
+                            value={customContext}
+                            onChange={(e) => setCustomContext(e.target.value)}
+                            className="w-full bg-background border border-border rounded-lg p-3 text-sm text-textMain focus:border-primary focus:outline-none transition-colors h-24 resize-none"
+                            placeholder={source === 'Custom Topic' ? "What do you want to post about?" : "Describe the changes or add focus..."}
+                        />
                     </div>
 
                     <div>
@@ -111,10 +179,32 @@ export const Narrative = () => {
                     </div>
 
                     <div>
-                        <label className="text-xs font-bold uppercase text-textMuted mb-3 block">Format</label>
+                        <label className="text-xs font-bold uppercase text-textMuted mb-3 block">Platform</label>
                         <div className="flex gap-2">
-                            <button className="p-2 rounded border border-primary/50 text-primary bg-primary/10"><Twitter size={16} /></button>
-                            <button className="p-2 rounded border border-border text-textMuted hover:text-textMain"><Linkedin size={16} /></button>
+                            <button
+                                onClick={() => setPlatform('Twitter')}
+                                className={cn("p-2 rounded border transition-colors", platform === 'Twitter' ? "border-primary text-primary bg-primary/10" : "border-border text-textMuted")}
+                            >
+                                <Twitter size={16} />
+                            </button>
+                            <button
+                                onClick={() => setPlatform('LinkedIn')}
+                                className={cn("p-2 rounded border transition-colors", platform === 'LinkedIn' ? "border-blue-500 text-blue-500 bg-blue-500/10" : "border-border text-textMuted")}
+                            >
+                                <Linkedin size={16} />
+                            </button>
+                            <button
+                                onClick={() => setPlatform('Reddit')}
+                                className={cn("p-2 rounded border transition-colors", platform === 'Reddit' ? "border-orange-500 text-orange-500 bg-orange-500/10" : "border-border text-textMuted")}
+                            >
+                                <MessageSquare size={16} />
+                            </button>
+                            <button
+                                onClick={() => setPlatform('YouTube')}
+                                className={cn("p-2 rounded border transition-colors", platform === 'YouTube' ? "border-red-500 text-red-500 bg-red-500/10" : "border-border text-textMuted")}
+                            >
+                                <Youtube size={16} />
+                            </button>
                         </div>
                     </div>
 

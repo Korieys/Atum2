@@ -6,8 +6,10 @@ import { useAtumStore } from '../store/useAtumStore';
 import { useEffect } from 'react';
 
 
+import { cn } from '../lib/utils';
+
 export const Community = () => {
-    const { communityUpdates, fetchCommunity, isLoading } = useAtumStore();
+    const { communityUpdates, fetchCommunity, isLoading, userProfile } = useAtumStore();
 
     useEffect(() => {
         fetchCommunity();
@@ -88,8 +90,21 @@ export const Community = () => {
                                     <button className="flex items-center gap-2 text-xs font-medium hover:brightness-125 transition-colors text-textMuted hover:text-primary">
                                         <ThumbsUp size={14} /> 0
                                     </button>
-                                    <button className="flex items-center gap-2 text-xs font-medium hover:brightness-125 transition-colors text-textMain hover:text-primary">
-                                        <MessageSquare size={14} /> Connect
+                                    <button
+                                        onClick={() => {
+                                            if (userProfile?.following?.includes(p.id)) {
+                                                useAtumStore.getState().unfollowUser(p.id);
+                                            } else {
+                                                useAtumStore.getState().followUser(p.id);
+                                            }
+                                        }}
+                                        className={cn(
+                                            "flex items-center gap-2 text-xs font-medium hover:brightness-125 transition-colors",
+                                            userProfile?.following?.includes(p.id) ? "text-primary" : "text-textMain hover:text-primary"
+                                        )}
+                                    >
+                                        <MessageSquare size={14} />
+                                        {userProfile?.following?.includes(p.id) ? "Joined" : "Join"}
                                     </button>
                                 </div>
                             </div>
@@ -114,6 +129,6 @@ export const Community = () => {
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };

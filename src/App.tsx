@@ -14,6 +14,7 @@ import React from 'react';
 import { Landing } from './pages/Landing';
 import { Onboarding } from './pages/Onboarding';
 import { Settings } from './pages/Settings';
+import { ToastNotification } from './components/ui/ToastNotification';
 
 const RequireAuth = ({ children }: { children: React.ReactElement }) => {
   const { user, loading } = useAuth();
@@ -46,6 +47,7 @@ function App() {
   return (
     <Router>
       <AuthProvider>
+        <ToastNotification />
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />

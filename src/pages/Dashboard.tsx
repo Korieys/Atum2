@@ -6,11 +6,27 @@ import {
     Terminal,
     Cpu
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { TechCard } from '../components/ui/TechCard';
 import { ActionButton } from '../components/ui/ActionButton';
 import { useAtumStore, type ActivityItem } from '../store/useAtumStore';
+import { useNotificationStore } from '../store/useNotificationStore';
 import { cn } from '../lib/utils';
 import { GitCommit, CheckCircle } from 'lucide-react';
+import { auth } from '../lib/firebase';
+import { MilestoneModal } from '../components/MilestoneModal';
+
+const calculateUptime = (creationTime: string) => {
+    const start = new Date(creationTime);
+    const now = new Date();
+    const diff = now.getTime() - start.getTime();
+
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+    return `${days}d ${hours}h ${minutes}m`;
+};
 
 const TerminalFeedItem = ({ item, index }: { item: ActivityItem, index: number }) => {
     // Mapping icons based on type string since we can't persist React components in JSON
@@ -66,6 +82,23 @@ const TerminalFeedItem = ({ item, index }: { item: ActivityItem, index: number }
 
 export const Dashboard = () => {
     const { activityLog, drafts, communityUpdates, userProfile, isLoading, error } = useAtumStore();
+    const { addNotification } = useNotificationStore();
+
+    // Simulation: Check for major alerts from followed users
+    useEffect(() => {
+        if (userProfile?.following && userProfile.following.length > 0) {
+            // Simulate a random "Major Event" from the network
+            const timer = setTimeout(() => {
+                addNotification({
+                    type: 'alert',
+                    title: 'MAJOR ALERT // NETWORK SIGNAL',
+                    message: 'Alex Builder just launched "Cosmos v1" to Public Beta.',
+                    duration: 8000
+                });
+            }, 3000); // 3s delay after load
+            return () => clearTimeout(timer);
+        }
+    }, [userProfile?.following, addNotification]);
 
     // Computed Stats
     // Velocity: Activities in the last 7 days
@@ -88,8 +121,15 @@ export const Dashboard = () => {
 
     const systemStatus = error ? "OFFLINE" : (isLoading ? "SYNCING" : "ONLINE");
 
+    // Uptime Calculation
+    const creationTime = auth.currentUser?.metadata.creationTime;
+    const uptime = creationTime ? calculateUptime(creationTime) : "0d 0h 0m";
+
+    const [isMilestoneModalOpen, setIsMilestoneModalOpen] = useState(false);
+
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
+            <MilestoneModal isOpen={isMilestoneModalOpen} onClose={() => setIsMilestoneModalOpen(false)} />
 
             {/* Section: Mission Control Header */}
             <div className="relative p-6 rounded-2xl border border-border overflow-hidden bg-gradient-to-r from-surface to-surfaceHighlight">
@@ -102,18 +142,25 @@ export const Dashboard = () => {
                             <span className="text-xs font-mono font-bold tracking-widest uppercase">System {systemStatus}</span>
                         </div>
                         <h1 className="text-3xl font-bold text-textMain">Mission Control</h1>
-                        <p className="text-textMuted">Welcome back, <span className="text-textMain font-bold">{userProfile?.username || 'Pilot'}</span> • Phase 3: Scaling</p>
+                        <p className="text-textMuted">
+                            Welcome back, <span className="text-textMain font-bold">{userProfile?.username || 'Pilot'}</span> • {userProfile?.phase || "Phase 1: Stealth Build"}
+                            {userProfile?.currentlyBuilding && (
+                                <span className="block md:inline md:ml-2 text-primary">
+                                    // Building: <span className="font-bold">{userProfile.currentlyBuilding}</span>
+                                </span>
+                            )}
+                        </p>
                     </div>
 
                     <div className="flex gap-4">
                         <div className="text-right hidden md:block">
                             <div className="text-xs font-mono uppercase text-textMuted">Uptime</div>
-                            <div className="text-xl font-mono font-bold text-textMain">14d 03h 12m</div>
+                            <div className="text-xl font-mono font-bold text-textMain">{uptime}</div>
                         </div>
                         <div className="h-10 w-px hidden md:block bg-border" />
                         <div className="flex gap-2">
-                            <ActionButton className="h-10 px-4"><PenTool size={16} /></ActionButton>
-                            <ActionButton primary className="h-10 px-6 font-mono tracking-wide"><Zap size={16} /> GENERATE_LOG</ActionButton>
+                            <ActionButton onClick={() => window.location.href = '/app/tracker'} className="h-10 px-4"><PenTool size={16} /></ActionButton>
+                            <ActionButton onClick={() => setIsMilestoneModalOpen(true)} primary className="h-10 px-6 font-mono tracking-wide"><Zap size={16} /> GENERATE_MILESTONE</ActionButton>
                         </div>
                     </div>
                 </div>

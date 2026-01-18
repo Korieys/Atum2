@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { Filter, Plus, GitCommit, Zap, X } from 'lucide-react';
+import { Filter, Plus, GitCommit, Zap, X, Trash2 } from 'lucide-react';
 import { ActionButton } from '../components/ui/ActionButton';
 import { Badge } from '../components/ui/Badge';
 import { useAtumStore, type ActivityItem } from '../store/useAtumStore';
 import { cn } from '../lib/utils';
 
 export const Tracker = () => {
-    const { activityLog, addActivity } = useAtumStore();
+    const { activityLog, addActivity, deleteActivity } = useAtumStore();
     const [showEntryForm, setShowEntryForm] = useState(false);
     const [title, setTitle] = useState('');
     const [desc, setDesc] = useState('');
@@ -116,8 +116,24 @@ export const Tracker = () => {
                                             )}
                                         />
 
-                                        <div className="p-4 rounded-xl border border-border transition-all hover:translate-x-1 bg-surface">
-                                            <div className="flex justify-between items-start mb-2">
+                                        <div className="p-4 rounded-xl border border-border transition-all hover:translate-x-1 bg-surface relative">
+                                            {item.source !== 'GitHub' && (
+                                                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (window.confirm('Are you sure you want to delete this activity?')) {
+                                                                deleteActivity(item.id);
+                                                            }
+                                                        }}
+                                                        className="p-1 hover:bg-background rounded text-textMuted hover:text-red-500"
+                                                        title="Delete activity"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                </div>
+                                            )}
+                                            <div className="flex justify-between items-start mb-2 pr-6">
                                                 <div className="flex items-center gap-2">
                                                     <Badge variant={item.type === 'milestone' ? 'accent' : 'primary'}>{item.type}</Badge>
                                                     <span className="text-xs text-textMuted">{item.source}</span>

@@ -7,6 +7,7 @@ export interface UserProfile {
     username: string;
     bio: string;
     role: string;
+    currentlyBuilding?: string;
     techStack: string[];
     email?: string | null;
     avatarUrl?: string;
@@ -19,6 +20,12 @@ export interface UserProfile {
     };
     stats?: {
         reach?: string;
+    };
+    following?: string[];
+    phase?: string;
+    githubConfig?: {
+        repo?: string; // "owner/repo"
+        token?: string;
     };
 }
 
@@ -70,7 +77,11 @@ interface AtumState {
     addDraft: (draft: Omit<DraftItem, 'id'>) => Promise<void>;
     updateDraft: (id: string, updates: Partial<DraftItem>) => Promise<void>;
     updateProfile: (profile: UserProfile) => Promise<void>;
+    followUser: (targetId: string) => Promise<void>;
+    unfollowUser: (targetId: string) => Promise<void>;
     fetchCommunity: () => Promise<void>;
+    fetchGitHubCommits: () => Promise<void>;
+    deleteActivity: (id: string) => Promise<void>;
     signOut: () => Promise<void>;
 }
 
@@ -116,8 +127,7 @@ export const useAtumStore = create<AtumState>((set, get) => ({
                         source: data.source || 'system',
                         title: data.title || 'Untitled'
                     } as ActivityItem;
-                }).sort((a, b) => {
-                    if (!a.created_at || !b.created_at) return 0;
+                }).sort((_a, _b) => {
                     return 0;
                 }),
                 isInitialized: true,
@@ -143,6 +153,17 @@ export const useAtumStore = create<AtumState>((set, get) => ({
         });
 
         await get().fetchData();
+    },
+
+    deleteActivity: async (id) => {
+        try {
+            await deleteDoc(doc(db, "activity", id));
+            set(state => ({
+                activityLog: state.activityLog.filter(item => item.id !== id)
+            }));
+        } catch (error) {
+            console.error("Error deleting activity:", error);
+        }
     },
 
     addIdea: async (item) => {
@@ -230,6 +251,7 @@ export const useAtumStore = create<AtumState>((set, get) => ({
         const profileRef = doc(db, "profiles", user.uid);
         await setDoc(profileRef, {
             ...profile,
+            phase: profile.phase || "Phase 1: Stealth Build",
             email: user.email,
             updatedAt: serverTimestamp()
         }, { merge: true });
@@ -243,6 +265,48 @@ export const useAtumStore = create<AtumState>((set, get) => ({
             title: 'Profile Updated',
             desc: 'User profile details updated'
         });
+    },
+
+    followUser: async (targetId: string) => {
+        const user = auth.currentUser;
+        const profile = get().userProfile;
+        if (!user || !profile) return;
+
+        const currentFollowing = profile.following || [];
+        if (currentFollowing.includes(targetId)) return;
+
+        const newFollowing = [...currentFollowing, targetId];
+
+        // Update local
+        set({ userProfile: { ...profile, following: newFollowing } });
+
+        // Update Firestore
+        const profileRef = doc(db, "profiles", user.uid);
+        await setDoc(profileRef, { following: newFollowing }, { merge: true });
+
+        // Log it
+        await get().addActivity({
+            type: 'milestone',
+            source: 'Community',
+            title: 'Joined Community',
+            desc: `Started following a new builder.`
+        });
+    },
+
+    unfollowUser: async (targetId: string) => {
+        const user = auth.currentUser;
+        const profile = get().userProfile;
+        if (!user || !profile) return;
+
+        const currentFollowing = profile.following || [];
+        const newFollowing = currentFollowing.filter(id => id !== targetId);
+
+        // Update local
+        set({ userProfile: { ...profile, following: newFollowing } });
+
+        // Update Firestore
+        const profileRef = doc(db, "profiles", user.uid);
+        await setDoc(profileRef, { following: newFollowing }, { merge: true });
     },
 
     fetchCommunity: async () => {
@@ -267,6 +331,55 @@ export const useAtumStore = create<AtumState>((set, get) => ({
         } catch (e) {
             console.error(e);
             set({ isLoading: false });
+        }
+    },
+
+    fetchGitHubCommits: async () => {
+        const profile = get().userProfile;
+        if (!profile?.githubConfig?.repo) return;
+
+        const { repo, token } = profile.githubConfig;
+        try {
+            const headers: HeadersInit = {
+                'Accept': 'application/vnd.github.v3+json'
+            };
+            if (token) {
+                headers['Authorization'] = `token ${token}`;
+            }
+
+            const response = await fetch(`https://api.github.com/repos/${repo}/commits?per_page=10`, { headers });
+            if (!response.ok) throw new Error('Failed to fetch commits');
+
+            const data = await response.json();
+
+            const newCommits: ActivityItem[] = data.map((commit: any) => ({
+                id: `gh-${commit.sha.substring(0, 7)}`,
+                type: 'commit',
+                source: 'GitHub',
+                title: commit.commit.message.split('\n')[0],
+                desc: `Commit by ${commit.commit.author.name}`,
+                time: new Date(commit.commit.author.date).toLocaleDateString(),
+                details: commit.html_url,
+                created_at: commit.commit.author.date // For sorting if needed
+            }));
+
+            // Merge and deduplicate
+            set(state => {
+                const existingIds = new Set(state.activityLog.map(i => i.id));
+                const uniqueNew = newCommits.filter(c => !existingIds.has(c.id));
+                if (uniqueNew.length === 0) return {};
+
+                return {
+                    activityLog: [...uniqueNew, ...state.activityLog].sort((_a, _b) => {
+                        // Simple string compare or date parse if needed, for MVP just placing new ones top
+                        return 0;
+                    })
+                };
+            });
+
+        } catch (error) {
+            console.error("GitHub Sync Error:", error);
+            // Optional: set specific error state
         }
     },
 

@@ -6,7 +6,7 @@ import { ActionButton } from '../components/ui/ActionButton';
 
 export const Settings = () => {
     const navigate = useNavigate();
-    const { userProfile, updateProfile, signOut } = useAtumStore();
+    const { userProfile, updateProfile, signOut, fetchGitHubCommits } = useAtumStore();
     const [isLoading, setIsLoading] = useState(false);
     const [msg, setMsg] = useState({ type: '', text: '' });
 
@@ -14,6 +14,8 @@ export const Settings = () => {
         username: '',
         bio: '',
         role: 'Engineer',
+        currentlyBuilding: '',
+        phase: 'Phase 1: Stealth Build',
         stats: { reach: '12.5k' },
         socials: {
             twitter: '',
@@ -21,6 +23,10 @@ export const Settings = () => {
             linkedin: '',
             youtube: '',
             website: ''
+        },
+        githubConfig: {
+            repo: '',
+            token: ''
         }
     });
 
@@ -30,6 +36,8 @@ export const Settings = () => {
                 username: userProfile.username || '',
                 bio: userProfile.bio || '',
                 role: userProfile.role || 'Engineer',
+                currentlyBuilding: userProfile.currentlyBuilding || '',
+                phase: userProfile.phase || 'Phase 1: Stealth Build',
                 stats: { reach: userProfile.stats?.reach || '0' },
                 socials: {
                     twitter: userProfile.socials?.twitter || '',
@@ -37,6 +45,10 @@ export const Settings = () => {
                     linkedin: userProfile.socials?.linkedin || '',
                     youtube: userProfile.socials?.youtube || '',
                     website: userProfile.socials?.website || ''
+                },
+                githubConfig: {
+                    repo: userProfile.githubConfig?.repo || '',
+                    token: userProfile.githubConfig?.token || ''
                 }
             });
         }
@@ -52,11 +64,12 @@ export const Settings = () => {
                 ...userProfile!,
                 username: formData.username,
                 bio: formData.bio,
-                role: formData.role,
+                phase: formData.phase,
                 stats: formData.stats,
-                socials: formData.socials
+                socials: formData.socials,
+                githubConfig: formData.githubConfig
             });
-            setMsg({ type: 'success', text: 'Profile updated successfully.' });
+            setMsg({ type: 'success', text: 'Profile & Integrations updated.' });
         } catch (error) {
             console.error(error);
             setMsg({ type: 'error', text: 'Failed to update profile.' });
@@ -132,6 +145,30 @@ export const Settings = () => {
                                     <option value="Creator">Content Creator</option>
                                 </select>
                             </div>
+                            <div className="space-y-1 md:col-span-2">
+                                <label className="text-xs font-bold text-textMuted uppercase">Mission Phase</label>
+                                <select
+                                    value={formData.phase}
+                                    onChange={e => setFormData({ ...formData, phase: e.target.value })}
+                                    className="w-full bg-background border border-border rounded-lg p-3 text-textMain focus:border-primary focus:outline-none transition-colors"
+                                >
+                                    <option value="Phase 1: Stealth Build">Phase 1: Stealth Build</option>
+                                    <option value="Phase 2: Public Beta">Phase 2: Public Beta</option>
+                                    <option value="Phase 3: User Acquisition">Phase 3: User Acquisition</option>
+                                    <option value="Phase 4: Revenue Growth">Phase 4: Revenue Growth</option>
+                                    <option value="Phase 5: Market Dominance">Phase 5: Market Dominance</option>
+                                </select>
+                            </div>
+                            <div className="space-y-1 md:col-span-2">
+                                <label className="text-xs font-bold text-textMuted uppercase">Currently Building</label>
+                                <input
+                                    type="text"
+                                    value={formData.currentlyBuilding}
+                                    onChange={e => setFormData({ ...formData, currentlyBuilding: e.target.value })}
+                                    className="w-full bg-background border border-border rounded-lg p-3 text-textMain focus:border-primary focus:outline-none transition-colors"
+                                    placeholder="Project Name (e.g. Project Onyx)"
+                                />
+                            </div>
                         </div>
 
                         <div className="space-y-1">
@@ -141,6 +178,48 @@ export const Settings = () => {
                                 onChange={e => setFormData({ ...formData, bio: e.target.value })}
                                 className="w-full bg-background border border-border rounded-lg p-3 text-textMain focus:border-primary focus:outline-none transition-colors h-24 resize-none"
                             />
+                        </div>
+
+                        <div className="pt-4 border-t border-border">
+                            <h2 className="text-sm font-bold uppercase tracking-widest text-textMuted mb-4">Integrations Module</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-textMuted uppercase">GitHub Repo (owner/repo)</label>
+                                    <input
+                                        type="text"
+                                        value={formData.githubConfig.repo}
+                                        onChange={e => setFormData({
+                                            ...formData,
+                                            githubConfig: { ...formData.githubConfig, repo: e.target.value }
+                                        })}
+                                        className="w-full bg-background border border-border rounded-lg p-3 text-textMain focus:border-primary focus:outline-none transition-colors"
+                                        placeholder="antigravity/atum"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-textMuted uppercase">GitHub Token (Optional)</label>
+                                    <input
+                                        type="password"
+                                        value={formData.githubConfig.token}
+                                        onChange={e => setFormData({
+                                            ...formData,
+                                            githubConfig: { ...formData.githubConfig, token: e.target.value }
+                                        })}
+                                        className="w-full bg-background border border-border rounded-lg p-3 text-textMain focus:border-primary focus:outline-none transition-colors"
+                                        placeholder="ghp_..."
+                                    />
+                                    <p className="text-[10px] text-textMuted">Required for private repos or high volume traffic.</p>
+                                </div>
+                                <div className="md:col-span-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => fetchGitHubCommits().then(() => alert('Sync initiated! Check dashboard activity.'))}
+                                        className="text-xs font-mono text-primary hover:underline"
+                                    >
+                                        [TEST CONNECTION & SYNC LOGS]
+                                    </button>
+                                </div>
+                            </div>
                         </div>
 
                         <div className="pt-4 border-t border-border">
