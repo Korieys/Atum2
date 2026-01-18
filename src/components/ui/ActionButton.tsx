@@ -3,12 +3,14 @@ import { cn } from '../../lib/utils';
 
 interface ActionButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     primary?: boolean;
+    shadow?: boolean;
 }
 
 export const ActionButton: React.FC<ActionButtonProps> = ({
     children,
     primary = false,
     className,
+    shadow, // Destructure to avoid passing to DOM
     ...props
 }) => {
     return (

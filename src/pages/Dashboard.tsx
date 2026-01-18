@@ -15,6 +15,7 @@ import { cn } from '../lib/utils';
 import { GitCommit, CheckCircle } from 'lucide-react';
 import { auth } from '../lib/firebase';
 import { MilestoneModal } from '../components/MilestoneModal';
+import { DailyInsight } from '../components/DailyInsight';
 
 const calculateUptime = (creationTime: string) => {
     const start = new Date(creationTime);
@@ -128,7 +129,7 @@ export const Dashboard = () => {
     const [isMilestoneModalOpen, setIsMilestoneModalOpen] = useState(false);
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500">
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <MilestoneModal isOpen={isMilestoneModalOpen} onClose={() => setIsMilestoneModalOpen(false)} />
 
             {/* Section: Mission Control Header */}
@@ -204,6 +205,9 @@ export const Dashboard = () => {
                 {/* Col: Side Modules */}
                 <div className="lg:col-span-4 space-y-6">
 
+                    {/* Module: Daily Insight */}
+                    <DailyInsight />
+
                     {/* Module: Content Fabricator */}
                     <div className="rounded-xl border border-border overflow-hidden bg-surface">
                         <div className="p-4 border-b border-border flex justify-between items-center">
@@ -244,16 +248,16 @@ export const Dashboard = () => {
                             </h3>
                         </div>
                         <div className="p-4 space-y-4">
-                            {communityUpdates.map(update => (
+                            {communityUpdates.slice(0, 5).map(update => (
                                 <div key={update.id} className="flex gap-3 items-center">
                                     <div className="w-8 h-8 rounded border border-border flex items-center justify-center text-xs font-bold bg-surfaceHighlight text-primary">
-                                        {update.user.charAt(0)}
+                                        {update.username?.charAt(0).toUpperCase() || '?'}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <p className="text-xs truncate text-textMain">
-                                            <span className="font-bold">{update.user}</span> {update.action}
+                                            <span className="font-bold">{update.username || 'Unknown'}</span> joined as {update.role || 'Member'}
                                         </p>
-                                        <span className="text-[10px] font-mono text-textMuted">{update.time}</span>
+                                        <span className="text-[10px] font-mono text-textMuted">Just now</span>
                                     </div>
                                 </div>
                             ))}

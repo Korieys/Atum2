@@ -1,19 +1,29 @@
 import { useState } from 'react';
-import { Filter, Plus, GitCommit, Zap, X, Trash2 } from 'lucide-react';
+import { Filter, Plus, GitCommit, X, Trash2 } from 'lucide-react';
 import { ActionButton } from '../components/ui/ActionButton';
 import { Badge } from '../components/ui/Badge';
 import { useAtumStore, type ActivityItem } from '../store/useAtumStore';
 import { cn } from '../lib/utils';
+import { ConfirmationModal } from '../components/ui/ConfirmationModal';
+import { useNotificationStore } from '../store/useNotificationStore';
+import { DailyInsight } from '../components/DailyInsight';
 
 export const Tracker = () => {
     const { activityLog, addActivity, deleteActivity } = useAtumStore();
+    const { addNotification } = useNotificationStore();
     const [showEntryForm, setShowEntryForm] = useState(false);
     const [title, setTitle] = useState('');
     const [desc, setDesc] = useState('');
     const [type, setType] = useState<ActivityItem['type']>('note');
+    const [itemToDelete, setItemToDelete] = useState<string | null>(null);
 
-    // Group activity by 'Today', 'Yesterday', etc. for the view
-    // Simplified for MVP: Just taking the flat list so we see results immediately
+    // Filter State
+    const [filterType, setFilterType] = useState<ActivityItem['type'] | 'all'>('all');
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+    const filteredLog = filterType === 'all'
+        ? activityLog
+        : activityLog.filter(item => item.type === filterType);
 
     const handleSave = () => {
         if (!title) return;
@@ -26,10 +36,34 @@ export const Tracker = () => {
         setTitle('');
         setDesc('');
         setShowEntryForm(false);
+        addNotification({
+            type: 'success',
+            title: 'Entry Saved',
+            message: `Your ${type} has been recorded.`
+        });
+    };
+
+    const handleConfirmDelete = () => {
+        if (itemToDelete) {
+            deleteActivity(itemToDelete);
+            addNotification({
+                type: 'success',
+                title: 'Activity Deleted',
+                message: 'The activity has been permanently removed.'
+            });
+            setItemToDelete(null);
+        }
     };
 
     return (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 relative">
+            <ConfirmationModal
+                isOpen={!!itemToDelete}
+                onClose={() => setItemToDelete(null)}
+                onConfirm={handleConfirmDelete}
+                title="Delete Activity?"
+                message="This action cannot be undone. Are you sure you want to proceed?"
+            />
 
             {/* Modal / Inline Form Overlay */}
             {showEntryForm && (
@@ -85,8 +119,39 @@ export const Tracker = () => {
                     <h2 className="text-2xl font-bold mb-1 text-textMain">Smart Progress Tracker</h2>
                     <p className="text-textMuted">Your automated project diary.</p>
                 </div>
-                <div className="flex gap-2">
-                    <ActionButton><Filter size={16} /> Filter</ActionButton>
+                <div className="flex gap-2 relative">
+                    <div className="relative">
+                        <ActionButton onClick={() => setIsFilterOpen(!isFilterOpen)} className={cn(isFilterOpen && "bg-white/10 text-white")}>
+                            <Filter size={16} />
+                            {filterType === 'all' ? 'Filter' : `Filter: ${filterType}`}
+                        </ActionButton>
+
+                        {isFilterOpen && (
+                            <div className="absolute top-full right-0 mt-2 w-48 bg-surface border border-border rounded-xl shadow-xl z-20 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                                <div className="p-1">
+                                    {(['all', 'note', 'milestone', 'task', 'commit'] as const).map(t => (
+                                        <button
+                                            key={t}
+                                            onClick={() => {
+                                                setFilterType(t as any);
+                                                setIsFilterOpen(false);
+                                            }}
+                                            className={cn(
+                                                "w-full text-left px-3 py-2 text-sm rounded-lg capitalize transition-colors flex items-center justify-between group",
+                                                filterType === t ? "bg-primary/10 text-primary" : "text-textMuted hover:bg-white/5 hover:text-textMain"
+                                            )}
+                                        >
+                                            {t}
+                                            {filterType === t && <div className="w-1.5 h-1.5 rounded-full bg-primary" />}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        {/* Backdrop to close */}
+                        {isFilterOpen && <div className="fixed inset-0 z-10" onClick={() => setIsFilterOpen(false)} />}
+                    </div>
+
                     <ActionButton onClick={() => setShowEntryForm(true)} primary><Plus size={16} /> Manual Entry</ActionButton>
                 </div>
             </div>
@@ -99,14 +164,16 @@ export const Tracker = () => {
                             <div className="h-px flex-1 bg-border"></div>
                         </div>
 
-                        {activityLog.length === 0 ? (
+                        {filteredLog.length === 0 ? (
                             <div className="p-8 text-center rounded-xl border border-dashed border-border bg-surface/50">
                                 <p className="text-textMuted mb-2">No activity recorded yet.</p>
-                                <p className="text-xs text-textMuted/70">Actions you take in the app will appear here automatically.</p>
+                                <p className="text-xs text-textMuted/70">
+                                    {filterType === 'all' ? "Actions you take in the app will appear here automatically." : `No items found for filter: ${filterType}`}
+                                </p>
                             </div>
                         ) : (
                             <div className="space-y-4 relative pl-4 border-l-2 border-surfaceHighlight">
-                                {activityLog.map((item) => (
+                                {filteredLog.map((item) => (
                                     <div key={item.id} className="relative group">
                                         {/* Timeline Dot */}
                                         <div
@@ -122,9 +189,7 @@ export const Tracker = () => {
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            if (window.confirm('Are you sure you want to delete this activity?')) {
-                                                                deleteActivity(item.id);
-                                                            }
+                                                            setItemToDelete(item.id);
                                                         }}
                                                         className="p-1 hover:bg-background rounded text-textMuted hover:text-red-500"
                                                         title="Delete activity"
@@ -157,22 +222,8 @@ export const Tracker = () => {
                 </div>
 
                 <div className="space-y-6">
-                    <div className="p-5 rounded-xl border border-border bg-surface">
-                        <h3 className="font-bold mb-4 flex items-center gap-2 text-textMain">
-                            <Zap size={18} className="text-primary" /> Daily Insight
-                        </h3>
-                        <p className="text-sm mb-4 leading-relaxed text-textMuted">
-                            You're spending 40% of your time on infrastructure this week. Consider pivoting to feature work to maintain shipping momentum.
-                        </p>
-                        <div className="h-2 w-full rounded-full overflow-hidden flex bg-white/10">
-                            <div className="h-full w-[40%] bg-accent"></div>
-                            <div className="h-full w-[60%] bg-primary"></div>
-                        </div>
-                        <div className="flex justify-between mt-2 text-xs text-textMuted">
-                            <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-accent" /> Infra</span>
-                            <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-primary" /> Features</span>
-                        </div>
-                    </div>
+                    {/* Daily Insight Module */}
+                    <DailyInsight />
                 </div>
             </div>
         </div>

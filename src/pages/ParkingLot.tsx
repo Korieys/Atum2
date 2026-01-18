@@ -58,7 +58,7 @@ export const ParkingLot = () => {
     };
 
     return (
-        <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 min-h-screen relative overflow-hidden">
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 min-h-screen relative overflow-hidden">
             <IdeaModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
 
             {/* Ambient Background Mesh - Toned down slightly */}

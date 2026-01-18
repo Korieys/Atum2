@@ -3,6 +3,7 @@ import { X, Lightbulb } from 'lucide-react';
 import { ActionButton } from './ui/ActionButton';
 import { useAtumStore } from '../store/useAtumStore';
 import { cn } from '../lib/utils';
+import { Modal } from './ui/Modal';
 
 interface IdeaModalProps {
     isOpen: boolean;
@@ -17,8 +18,6 @@ export const IdeaModal = ({ isOpen, onClose }: IdeaModalProps) => {
     const [desc, setDesc] = useState('');
     const [selectedTag, setSelectedTag] = useState<string>('Feature');
     const [isSubmitting, setIsSubmitting] = useState(false);
-
-    if (!isOpen) return null;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -43,8 +42,13 @@ export const IdeaModal = ({ isOpen, onClose }: IdeaModalProps) => {
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
-            <div className="w-full max-w-lg bg-[#0a0f0a] border border-white/10 rounded-3xl p-8 shadow-2xl relative overflow-hidden group">
+        <Modal
+            isOpen={isOpen}
+            onClose={onClose}
+            showCloseButton={false}
+            className="max-w-lg bg-[#0a0f0a] border-white/10 rounded-3xl p-0 overflow-hidden group shadow-2xl"
+        >
+            <div className="p-8 relative">
                 {/* Gradient Border Effect */}
                 <div className="absolute inset-0 p-[1px] rounded-3xl bg-gradient-to-br from-white/10 via-white/5 to-transparent pointer-events-none" />
                 {/* Glow Effect */}
@@ -52,7 +56,7 @@ export const IdeaModal = ({ isOpen, onClose }: IdeaModalProps) => {
 
                 <button
                     onClick={onClose}
-                    className="absolute top-6 right-6 text-textMuted hover:text-white transition-colors"
+                    className="absolute top-6 right-6 text-textMuted hover:text-white transition-colors z-10"
                 >
                     <X size={24} />
                 </button>
@@ -122,6 +126,6 @@ export const IdeaModal = ({ isOpen, onClose }: IdeaModalProps) => {
                     </div>
                 </form>
             </div>
-        </div>
+        </Modal>
     );
 };

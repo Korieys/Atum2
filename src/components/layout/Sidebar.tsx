@@ -44,8 +44,11 @@ export const Sidebar = ({ mobileMenuOpen, setMobileMenuOpen }: { mobileMenuOpen?
     const currentPath = location.pathname;
     const { userProfile, isLoading, error } = useAtumStore();
 
-    // Simple active check: strictly equal or starts with for sub-routes
-    const isActive = (path: string) => currentPath === path || (path !== '/' && currentPath.startsWith(path));
+    // Fix: Strict check for Mission Control (/app), flexible for sub-routes
+    const isActive = (path: string) => {
+        if (path === '/app') return currentPath === '/app' || currentPath === '/app/';
+        return currentPath.startsWith(path);
+    };
 
     const navItems = [
         { label: 'Mission Control', icon: <LayoutIcon size={18} />, path: '/app' },
@@ -53,7 +56,7 @@ export const Sidebar = ({ mobileMenuOpen, setMobileMenuOpen }: { mobileMenuOpen?
         { label: 'Narrative', icon: <PenTool size={18} />, path: '/app/narrative' },
         { label: 'Ideas', icon: <Lightbulb size={18} />, path: '/app/ideas' },
         { label: 'Publisher', icon: <Share2 size={18} />, path: '/app/publisher' },
-        { label: 'Community', icon: <Users size={18} />, path: '/app/community' },
+        { label: 'Tribes', icon: <Users size={18} />, path: '/app/tribes' },
     ];
 
     return (

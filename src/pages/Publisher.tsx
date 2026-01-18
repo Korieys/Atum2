@@ -1,22 +1,22 @@
+import { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { ActionButton } from '../components/ui/ActionButton';
 import { Badge } from '../components/ui/Badge';
 import { useAtumStore } from '../store/useAtumStore';
 import type { DraftItem } from '../store/useAtumStore';
 import { useAuth } from '../components/auth/AuthProvider';
+import { InputModal } from '../components/ui/InputModal';
 
 export const Publisher = () => {
     const { drafts, updateDraft, addDraft, isLoading } = useAtumStore();
     const { user } = useAuth(); // kept for check in handleCreateDraft
+    const [isInputModalOpen, setIsInputModalOpen] = useState(false);
 
     const handleStatusChange = async (id: string, newStatus: DraftItem['status']) => {
         await updateDraft(id, { status: newStatus });
     };
 
-    const handleCreateDraft = async () => {
-        const title = prompt("Enter draft title:");
-        if (!title) return;
-
+    const handleCreateDraft = async (title: string) => {
         // Ensure user is logged in before adding draft
         if (!user) return;
 
@@ -39,13 +39,23 @@ export const Publisher = () => {
 
     return (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <InputModal
+                isOpen={isInputModalOpen}
+                onClose={() => setIsInputModalOpen(false)}
+                onSubmit={handleCreateDraft}
+                title="New Content Draft"
+                label="Draft Title"
+                placeholder="Give your post a working title..."
+                confirmText="Create Draft"
+            />
+
             <div className="flex justify-between items-center mb-8">
                 <div>
                     <h2 className="text-2xl font-bold text-textMain">Content Calendar</h2>
                     <p className="text-textMuted">Schedule and manage your cross-platform content.</p>
                 </div>
                 <div className="flex gap-2">
-                    <ActionButton primary onClick={handleCreateDraft}><Plus size={16} /> New Post</ActionButton>
+                    <ActionButton primary onClick={() => setIsInputModalOpen(true)}><Plus size={16} /> New Post</ActionButton>
                 </div>
             </div>
 

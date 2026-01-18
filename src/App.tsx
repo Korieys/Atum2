@@ -7,6 +7,7 @@ import { Narrative } from './pages/Narrative';
 import { ParkingLot } from './pages/ParkingLot';
 import { Publisher } from './pages/Publisher';
 import { Community } from './pages/Community';
+import { TribeDetail } from './pages/TribeDetail';
 import { Login } from './pages/Login';
 import { AuthProvider, useAuth } from './components/auth/AuthProvider';
 import { Loader2 } from 'lucide-react';
@@ -67,7 +68,9 @@ function App() {
                   <Route path="/narrative" element={<Narrative />} />
                   <Route path="/ideas" element={<ParkingLot />} />
                   <Route path="/publisher" element={<Publisher />} />
-                  <Route path="/community" element={<Community />} />
+                  <Route path="/community" element={<Navigate to="/app/tribes" replace />} />
+                  <Route path="/tribes" element={<Community />} />
+                  <Route path="/tribes/:id" element={<TribeDetail />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="*" element={<Navigate to="/app" replace />} />
                 </Routes>
